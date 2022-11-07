@@ -1,0 +1,32 @@
+# Write this file into your "$HOME/.bashrc" file, using Nano or whatever
+
+
+alias py="python"
+alias p5="cd $HOME/Desktop/p5/"
+alias aau="cd $HOME/Desktop/aau/"
+alias up="source ~/bash_aliases"        # Update aliases & BASH functions
+
+
+# -------------------------- #
+# ----  NS-3 Shortcuts  ---- #
+ns() { 
+    ns3path="$HOME/Desktop/p5/ns3/ns-allinone-3.36.1/ns-3.36.1"
+    if [[ $@ = help ]]      # Help argument is entered
+    then
+        $ns3path/ns3 --help # Run NS-3 help function
+    elif [[ $@ = dir ]]     # Directory argument is entered
+    then
+        echo "Entering NS-3 Directory"
+        cd $ns3path         # "cd" into NS-3 directory
+    elif [[ $# -eq "1" ]]   # Only one argument entered, that isn't any of the above
+    then
+        if [ ! -d $ns3path/output_files ]   # Make sure "output_files" directory exists
+        then
+            mkdir -p $ns3path/output_files  # Create directory if it doesn't
+        fi
+
+        $ns3path/ns3 run $@ --cwd=$ns3path/output_files     # Run the called NS-3 script, and put output files in the "output_files" directory
+    else
+        $ns3path/ns3 $@     # If more than one argument is called, run everything "normally"
+    fi; 
+}
