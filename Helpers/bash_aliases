@@ -6,6 +6,8 @@ alias p5="cd $HOME/Desktop/p5/"
 alias aau="cd $HOME/Desktop/aau/"
 alias up="source ~/bash_aliases"        # Update aliases & BASH functions
 
+ns-out="--cwd=$HOME/Desktop/p5/ns3/ns-allinone-3.36.1/ns-3.36.1/output_files"
+
 
 # -------------------------- #
 # ----  NS-3 Shortcuts  ---- #
@@ -17,16 +19,22 @@ ns() {
     elif [[ $@ = dir ]]     # Directory argument is entered
     then
         echo "Entering NS-3 Directory"
-        cd $ns3path         # "cd" into NS-3 directory
-    elif [[ $# -eq "1" ]]   # Only one argument entered, that isn't any of the above
+        cd $ns3path         # Enter NS-3 directory in terminal
+    elif [[ $@ = clean ]]   # If NS-3 cleaning function is wanted
+    then
+        echo "DON'T DO THIS!!!" 
+        echo "If you know what you're doing, call it manually in the NS-3 directory, you WILL need to reconfigure NS-3 after."
+    elif [[ $# -eq "1" ]]   # Only one argument entered, that isn't any of the above (expected "run" script wanted)
     then
         if [ ! -d $ns3path/output_files ]   # Make sure "output_files" directory exists
         then
             mkdir -p $ns3path/output_files  # Create directory if it doesn't
         fi
 
-        $ns3path/ns3 run $@ --cwd=$ns3path/output_files     # Run the called NS-3 script, and put output files in the "output_files" directory
+        $ns3path/ns3 run "$@" --cwd=$ns3path/output_files
+# Run the called NS-3 script, and put output files in the "output_files" directory
     else
-        $ns3path/ns3 $@     # If more than one argument is called, run everything "normally"
+        $ns3path/ns3 "$@"       # If more than one argument is called, run everything "normally"
+
     fi; 
 }

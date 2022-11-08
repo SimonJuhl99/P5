@@ -18,11 +18,20 @@ fi
 
 #### Usage  
 You can now run NS-3 scripts, without being in the folder, and don't have to call the *run* argument, unless you need more arguements than *run* and the path of the script to run.  
-```ns <path/script>```: runs the script at the path, and throws the output files into an *output_files* folder created at the NS-3 root folder.  
 
- ```ns dir```: directly enters your NS-3 directory, no matter where "you are".  
+```ns <path/script>```  
+Runs the script at the path, and throws the output files into an *output_files* folder created at the NS-3 root folder.  
 
- ```ns help```: calls the NS-3 help function.  
+```ns "<path/script> --<argument_name>=<arguement_value>"```  
+ If arguments are needed for the script, call the script and arguements using quotation-marks. Otherwise same as above.
 
-If other NS-3 functionality is needed, just write the the full arguements, as you normally would... Still don't need to be in the NS-3 directory though.  
-Like ```ns run <path/script> <argument1> <argument2>```
+ ```ns dir```  
+ Directly enters your NS-3 directory, no matter where "you are".  
+
+ ```ns help```  
+ Calls the NS-3 help function.  
+
+If other NS-3 functionality is needed, just write the the full arguments, as you normally would using NS-3... Still don't need to be in the NS-3 directory though.  
+
+Example ```ns run <path/script> <argument1> <argument2>```  
+*run* is a bad example though, as you hopefully don't need "*run arguments*" outside of the second example above.
