@@ -1,3 +1,8 @@
+#### NS-3's Own Docs Overview
+The NS-3 Documentation has it's own section to explain the general concepts, topology and typology.
+
+https://www.nsnam.org/docs/tutorial/html/conceptual-overview.html
+
 ## Good examples for understanding **shit**
 **Don't waste time on the *Python* files...** you need to understand the *C++* versions to be able to **almost** be able to write scripts using *Python*.  
 *Python* is likely a quicker tool, when you already know NS-3, but as a rookie, you'll need to learn how it works in 1,5 languages to utilize it. 
