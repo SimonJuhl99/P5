@@ -44,26 +44,10 @@ ns() {
         fi;
 
         #################################
-        # -- Output Folder Creation --   Overcomplicated version
-        # output_name=$(echo $@ | grep -o '/[a-Z]*\.' | grep -o '[a-Z]*')
-        # if [[ $output_name = "" ]]
-        # then
-        #     echo "No Name Found, Argument it \"$@\""
-        #     output_name=$1
-        # else
-        # # find $@ -name "*.cc" -exec sh -c 'echo "${0%.*}"' {} \;
-        #     echo "Found name: $output_name"
-        # fi;
-        # output_name=${output_name%.*}     # Remove fileextension if still there.
-        # output_name=${output_name##*/}    # Remove directory path, if still there.
-
-        #################################
-        # -- Output Folder Creation --    Simple version... does this have drawbacks?
-        output_name=${1%.*}     # Remove fileextension if still there.
+        # -- Output Folder Creation --
+        output_name=${1%.*}     # Remove file-extension if still there.
         output_name=${output_name##*/}    # Remove directory path, if still there.
 
-
-        # echo "Output Name: $output_name"
 
         if [ -d $ns3_path/output_files/$output_name ]
         then
@@ -74,10 +58,10 @@ ns() {
         fi;
 
 
-
         $ns3_path/ns3 run "$@" $out/$output_name        #Run the called NS-3 script, and put output files in the "output_files" directory
 
 
+        # If there's output files, tell the user... otherwise delete the empty folder.
         if ! rmdir $ns3_path/output_files/$output_name 2> /dev/null; then
             echo "Output files written to:"
             echo "$ns3_path/output_files/$output_name"
