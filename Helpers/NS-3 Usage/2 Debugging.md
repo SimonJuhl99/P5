@@ -17,7 +17,17 @@ Several QT5 (GUI framework) packages.
 
 Using *apt* run: ```apt install qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools```
 
-Again... might be called something different elsewhere, but Manjaro already has these installed by default. *I think*... 
+Again... might be called something different elsewhere, but Manjaro already has these installed by default. *I think*...
+
+### Installation Itself
+Go to ```https://www.nsnam.org/releases/ns-3-37/``` and under *Download* press the *this link* link.  
+This will download an archive, containing everything... more than needed actually.  
+
+Inside the *ns-allinone-3.37* directory, there's a *ns-3.37* folder that you can copy to whereever you want NS-3 installed (excluding all the annoying subdirectories).  
+
+When placed where you want it, just enter the *ns-3.37* directory using your terminal and run the configure functionality of NS-3 like: ```ns configure --build-profile=debug --out=build/debug --enable-examples --enable-tests```  
+
+NS-3 should now be ready to run.  
 
 ## Missing Terminal Output
 You've likely gotten NS-3 set to *Optimized Build* configuration.  

@@ -1,25 +1,33 @@
 # Write this file into your "$HOME/.bashrc" file, using Nano or whatever
 
+ns3_root="$HOME/Desktop/p5/ns3/ns-allinone-3.36.1"
+ns3_path="$ns3_root/ns-3.36.1"
+netanim_path="$ns3_root/netanim-3.108"
+out="--cwd=$ns3_path/output_files"
 
 alias py="python"
 alias p5="cd $HOME/Desktop/p5/"
 alias aau="cd $HOME/Desktop/aau/"
 alias up="source ~/bash_aliases"        # Update aliases & BASH functions
-
-ns-out="--cwd=$HOME/Desktop/p5/ns3/ns-allinone-3.36.1/ns-3.36.1/output_files"
+alias netanim="$netanim_path/NetAnim"
 
 
 # -------------------------- #
 # ----  NS-3 Shortcuts  ---- #
 ns() { 
-    ns3path="$HOME/Desktop/p5/ns3/ns-allinone-3.36.1/ns-3.36.1"
-    if [[ $@ = help ]]      # Help argument is entered
+    # ns3_path="$HOME/Desktop/p5/ns3/ns-allinone-3.36.1/ns-3.36.1"
+    # ls
+    # echo "Arguments inserted are $#"
+
+    if [[ $@ = help ]]          # Help argument is entered
     then
-        $ns3path/ns3 --help # Run NS-3 help function
-    elif [[ $@ = dir ]]     # Directory argument is entered
+        $ns3_path/ns3 --help     # Run NS-3 help function
+
+    elif [[ $@ = dir ]]         # Directory argument is entered
     then
         echo "Entering NS-3 Directory"
-        cd $ns3path         # Enter NS-3 directory in terminal
+        cd $ns3_path             # Enter NS-3 directory in terminal
+
     elif [[ $@ = clean ]]   # If NS-3 cleaning function is wanted
     then
         echo "DON'T DO THIS!!!" 
@@ -27,17 +35,56 @@ ns() {
         echo "Write the command:"
         echo "ns configure --build-profile=debug --out=build/debug --enable-examples --enable-tests"
         echo "if you do it anyway". 
-    elif [[ $# -eq "1" ]]   # Only one argument entered, that isn't any of the above (expected "run" script wanted)
+
+    elif [[ $# -eq "1" ]] || [[ $1 = run ]]   # If wanting to run a script
     then
-        if [ ! -d $ns3path/output_files ]   # Make sure "output_files" directory exists
+        if [[ $1 = run ]]
         then
-            mkdir -p $ns3path/output_files  # Create directory if it doesn't
-        fi
+            set -- "${@:2}"     # Remove the first "run" argument
+        fi;
 
-        $ns3path/ns3 run "$@" --cwd=$ns3path/output_files
-# Run the called NS-3 script, and put output files in the "output_files" directory
+        #################################
+        # -- Output Folder Creation --   Overcomplicated version
+        # output_name=$(echo $@ | grep -o '/[a-Z]*\.' | grep -o '[a-Z]*')
+        # if [[ $output_name = "" ]]
+        # then
+        #     echo "No Name Found, Argument it \"$@\""
+        #     output_name=$1
+        # else
+        # # find $@ -name "*.cc" -exec sh -c 'echo "${0%.*}"' {} \;
+        #     echo "Found name: $output_name"
+        # fi;
+        # output_name=${output_name%.*}     # Remove fileextension if still there.
+        # output_name=${output_name##*/}    # Remove directory path, if still there.
+
+        #################################
+        # -- Output Folder Creation --    Simple version... does this have drawbacks?
+        output_name=${1%.*}     # Remove fileextension if still there.
+        output_name=${output_name##*/}    # Remove directory path, if still there.
+
+
+        # echo "Output Name: $output_name"
+
+        if [ -d $ns3_path/output_files/$output_name ]
+        then
+            # echo "Re-running \"$1\" - Overwriting Old Files"
+        else
+            # echo "First Time Running \"$1\" - Creating Output Directory"
+            mkdir -p $ns3_path/output_files/$output_name
+        fi;
+
+
+
+        $ns3_path/ns3 run "$@" $out/$output_name        #Run the called NS-3 script, and put output files in the "output_files" directory
+
+
+        if ! rmdir $ns3_path/output_files/$output_name 2> /dev/null; then
+            echo "Output files written to:"
+            echo "$ns3_path/output_files/$output_name"
+        fi;
+    
     else
-        $ns3path/ns3 "$@"       # If more than one argument is called, run everything "normally"
-
+        $ns3_path/ns3 "$@"       # If more than one argument (that isn't "run") is called, call everything "normally"
     fi; 
 }
+
