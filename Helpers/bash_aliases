@@ -24,6 +24,9 @@ ns() {
     then
         echo "DON'T DO THIS!!!" 
         echo "If you know what you're doing, call it manually in the NS-3 directory, you WILL need to reconfigure NS-3 after."
+        echo "Write the command:"
+        echo "ns configure --build-profile=debug --out=build/debug --enable-examples --enable-tests"
+        echo "if you do it anyway". 
     elif [[ $# -eq "1" ]]   # Only one argument entered, that isn't any of the above (expected "run" script wanted)
     then
         if [ ! -d $ns3path/output_files ]   # Make sure "output_files" directory exists
