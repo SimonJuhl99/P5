@@ -19,7 +19,7 @@ fi
 #### Usage  
 You can now run NS-3 scripts, without being in the folder, and don't have to call the *run* argument, unless you need more arguements than *run* and the path of the script to run.  
 
-```ns <path/script>```  
+```ns <path/script>``` or just ```ns <script>```  
 Runs the script at the path, and throws the output files into an *output_files* folder created at the NS-3 root folder.  
 
 ```ns "<path/script> --<argument_name>=<arguement_value>"```  
@@ -33,5 +33,6 @@ Runs the script at the path, and throws the output files into an *output_files* 
 
 If other NS-3 functionality is needed, just write the the full arguments, as you normally would using NS-3... Still don't need to be in the NS-3 directory though.  
 
-Example ```ns run <path/script> <argument1> <argument2>```  
-*run* is a bad example though, as you hopefully don't need "*run arguments*" outside of the second example above.
+Example ```ns configure <argument1> <argument2>```  
+
+
