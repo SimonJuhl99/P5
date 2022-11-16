@@ -1,15 +1,20 @@
 # Write this file into your "$HOME/.bashrc" file, using Nano or whatever
+#
+# I know this is usually called ".bashaliases" instead, to hide the file... 
+# I like it better being visible... do and call it whatever you please, just remember to import the right filename in ".bashrc"
 
 ns3_root="$HOME/Desktop/p5/ns3/ns-allinone-3.36.1"
 ns3_path="$ns3_root/ns-3.36.1"
 netanim_path="$ns3_root/netanim-3.108"
-out="--cwd=$ns3_path/output_files"
+output_dir="$ns3_path/output_files"
 
-alias py="python"
-alias p5="cd $HOME/Desktop/p5/"
-alias aau="cd $HOME/Desktop/aau/"
-alias up="source ~/bash_aliases"        # Update aliases & BASH functions
-alias netanim="$netanim_path/NetAnim"
+out="--cwd=$output_dir"      # Just added so you can write $out in weird cases where the ns() function is used in a way where it doesn't "catch" it.
+
+alias py="python"                       # Less keystrokes... stupid keystrokes...
+alias p5="cd $ns3_path/p5/"             # Easy access to the P5 directory
+alias aau="cd $HOME/Desktop/aau/"       # Delete if you don't need it, enters my AAU folder
+alias up="source ~/bash_aliases"        # Update aliases & BASH functions in your terminal
+alias netanim="$netanim_path/NetAnim"   # To start NetAnim, no matter "where you are"
 
 
 # -------------------------- #
@@ -30,11 +35,9 @@ ns() {
 
     elif [[ $@ = clean ]]   # If NS-3 cleaning function is wanted
     then
-        echo "DON'T DO THIS!!!" 
+        echo -e "\n  \e[1m\e[5m\e[4mDON'T DO THIS!!!\e[0m \n" 
         echo "If you know what you're doing, call it manually in the NS-3 directory, you WILL need to reconfigure NS-3 after."
-        echo "Write the command:"
-        echo "ns configure --build-profile=debug --out=build/debug --enable-examples --enable-tests"
-        echo "if you do it anyway". 
+        echo -e "If you insist, use the command: \e[36mns configure --build-profile=debug --out=build/debug --enable-examples --enable-tests\e[0m"
 
     elif [[ $# -eq "1" ]] || [[ $1 = run ]]   # If wanting to run a script
     then
@@ -49,9 +52,9 @@ ns() {
         output_name=${output_name##*/}    # Remove directory path, if still there.
 
 
-        if [ ! -d $ns3_path/output_files/$output_name ]
+        if [ ! -d $output_dir/$output_name ]
         then
-            mkdir -p $ns3_path/output_files/$output_name
+            mkdir -p $output_dir/$output_name
         fi;
 
 
@@ -59,9 +62,9 @@ ns() {
 
 
         # If there's output files, tell the user... otherwise delete the empty folder.
-        if ! rmdir $ns3_path/output_files/$output_name 2> /dev/null; then
-            echo "Output files written to:"
-            echo "$ns3_path/output_files/$output_name"
+        if ! rmdir $output_dir/$output_name 2> /dev/null; then
+            echo -e "\n\e[4mOutput files written to:\e[0m"
+            echo -e "\e[3m$output_dir/$output_name\e[0m"
         fi;
     
     else
