@@ -1,5 +1,9 @@
-/*      --  10 Node Network Template -- 
-//  ---------------------------------------
+/*      --  Roundtrip, Out-of-Order & Congestion Script -- 
+//  ----------------------------------------------------------
+    Script Version:   N0.V0
+
+    Network nodes: 21.142.213 satellites (COME ON ELON!, WHAT 'U GOT?)
+    Network template: SKRIV DET!
 
     ------------------------- 
 // - Default Network Topology - \\

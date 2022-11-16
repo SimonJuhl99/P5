@@ -1,5 +1,7 @@
-/*      --  10 Node Network Template -- 
-//  ---------------------------------------
+/*      --  Congestion Script -- 
+//  --------------------------------
+    Network nodes: 21.142.213 satellites (COME ON ELON!, WHAT 'U GOT?)
+    Network template: SKRIV DET!
 
     ------------------------- 
 // - Default Network Topology - \\
