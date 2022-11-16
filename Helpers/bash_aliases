@@ -49,11 +49,8 @@ ns() {
         output_name=${output_name##*/}    # Remove directory path, if still there.
 
 
-        if [ -d $ns3_path/output_files/$output_name ]
+        if [ ! -d $ns3_path/output_files/$output_name ]
         then
-            # echo "Re-running \"$1\" - Overwriting Old Files"
-        else
-            # echo "First Time Running \"$1\" - Creating Output Directory"
             mkdir -p $ns3_path/output_files/$output_name
         fi;
 
