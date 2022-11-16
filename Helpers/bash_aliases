@@ -46,10 +46,11 @@ ns() {
             set -- "${@:2}"     # Remove the first "run" argument
         fi;
 
-        #################################
-        # -- Output Folder Creation --
-        output_name=${1%.*}     # Remove file-extension if still there.
-        output_name=${output_name##*/}    # Remove directory path, if still there.
+        #######################################
+        # -- Output Folder Name Creation --
+        output_name=${1%% *}                # Sort our first argument, if set in quotes
+        output_name=${output_name%.*}       # Remove file-extension if still there.
+        output_name=${output_name##*/}      # Remove directory path, if still there.
 
 
         if [ ! -d $output_dir/$output_name ]
