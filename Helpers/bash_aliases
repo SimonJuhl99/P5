@@ -11,7 +11,6 @@ output_dir="$ns3_path/output_files"
 out="--cwd=$output_dir"      # Just added so you can write $out in weird cases where the ns() function is used in a way where it doesn't "catch" it.
 
 alias py="python"                       # Less keystrokes... stupid keystrokes...
-alias p5="cd $ns3_path/p5/"             # Easy access to the P5 directory
 alias aau="cd $HOME/Desktop/aau/"       # Delete if you don't need it, enters my AAU folder
 alias up="source ~/bash_aliases"        # Update aliases & BASH functions in your terminal
 alias netanim="$netanim_path/NetAnim"   # To start NetAnim, no matter "where you are"
@@ -20,10 +19,6 @@ alias netanim="$netanim_path/NetAnim"   # To start NetAnim, no matter "where you
 # -------------------------- #
 # ----  NS-3 Shortcuts  ---- #
 ns() { 
-    # ns3_path="$HOME/Desktop/p5/ns3/ns-allinone-3.36.1/ns-3.36.1"
-    # ls
-    # echo "Arguments inserted are $#"
-
     if [[ $@ = help ]]          # Help argument is entered
     then
         $ns3_path/ns3 --help     # Run NS-3 help function
@@ -41,9 +36,9 @@ ns() {
 
     elif [[ $# -eq "1" ]] || [[ $1 = run ]]   # If wanting to run a script
     then
-        if [[ $1 = run ]]
+        if [[ $1 = run ]]       # If the first argument is "run"
         then
-            set -- "${@:2}"     # Remove the first "run" argument
+            set -- "${@:2}"     # Remove the "run" argument
         fi;
 
         #######################################
@@ -73,3 +68,31 @@ ns() {
     fi; 
 }
 
+
+# ------------------------------- #
+# ----  P5 Oriented Helpers  ---- #
+p5() {
+
+    # ----  Git Push Macro  ---- #
+    if [[ $@ = git ]]          # Help argument is entered
+    then
+        git pull
+        git add .
+        echo -e "\n \e[4m\e[1mWrite \e[3mcommit\e[23m message, please: \e[0m"
+        read msg
+        git commit -m "$msg"
+        git push
+
+    elif [[ $@ = exp ]]         # Directory argument is entered
+    then
+        echo "Opening P5 Directory in Thunar"
+        thunar $ns3_path             # Enter P5 directory in terminal
+
+    else
+    # elif [[ $@ = dir ]]         # Directory argument is entered
+    # then
+        echo "Entering P5 Directory"
+        cd $ns3_path/P5             # Enter P5 directory in terminal
+
+    fi;
+}
