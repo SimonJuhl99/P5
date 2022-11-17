@@ -3,10 +3,13 @@
 # I know this is usually called ".bashaliases" instead, to hide the file... 
 # I like it better being visible... do and call it whatever you please, just remember to import the right filename in ".bashrc"
 
+explorer="thunar"
 ns3_root="$HOME/Desktop/p5/ns3/ns-allinone-3.36.1"
 ns3_path="$ns3_root/ns-3.36.1"
+p5_path="$ns3_path/P5"
 netanim_path="$ns3_root/netanim-3.108"
 output_dir="$ns3_path/output_files"
+git_path="--git-dir=$p5_path/.git --work-tree=$p5_path"
 
 out="--cwd=$output_dir"      # Just added so you can write $out in weird cases where the ns() function is used in a way where it doesn't "catch" it.
 
@@ -27,6 +30,11 @@ ns() {
     then
         echo "Entering NS-3 Directory"
         cd $ns3_path             # Enter NS-3 directory in terminal
+
+    elif [[ $@ = exp ]]         # Directory argument is entered
+    then
+        echo -e "Opening NS-3 Directory in \e[3m$explorer\e[0m"
+        $explorer $ns3_path             # Enter NS-3 directory in your explorer
 
     elif [[ $@ = clean ]]   # If NS-3 cleaning function is wanted
     then
@@ -69,30 +77,63 @@ ns() {
 }
 
 
+
 # ------------------------------- #
 # ----  P5 Oriented Helpers  ---- #
 p5() {
 
-    # ----  Git Push Macro  ---- #
-    if [[ $@ = git ]]          # Help argument is entered
+    # ----  Send Help!!  ---- #
+    if [[ $@ = help ]]          # Help argument is entered
     then
-        git pull
-        git add .
-        echo -e "\n \e[4m\e[1mWrite \e[3mcommit\e[23m message, please: \e[0m"
-        read msg
-        git commit -m "$msg"
-        git push
+        echo -e "\n\e[1m\e[4mP5 Help\e[0m\nIf \e[3mp5\e[0m is called without further arguments, it will \e[3mcd\e[0m to your P5 directory.\n"
+        echo -e "Valid arguments are: \e[3mgit, exp\e[0m, with \e[3mgit\e[0m having more options.\n"
+        echo -e "\e[3m\e[4mexp\e[0m argument will open your P5 directory in your explorer."
+        echo -e "\e[3m\e[4mgit\e[0m argument, if called without further arguments, will go through all the motions of a \e[3mgit commit/push\e[0m, and ask for a message for your commit.\n"
+        echo -e "If entered with more arguments than just \e[3mgit\e[0m, it will just do your normal git commands that gets inserted."
+        echo -e "Example: \e[3mp5 git commit -m \"Deleted the entire repository\"2\e[0m will make a commit with that message, as it normally would.\n"
+    
+    # ----  Git Push Macro  ---- #
+    elif [[ $1 = git ]]          # Help argument is entered
+    then
 
+        if [[ ! $# -eq "1" ]]       # If the first argument is "run"
+        then
+            set -- "${@:2}"     # Remove the "run" argument
+
+            if [[ $1 = "help" ]]       # If the first argument is "run"
+            then
+                echo -e "\n\e[1m\e[4mP5 Git Help\e[0m\nIf \e[3mp5 git\e[0m is called without further arguments, it will go through all the motions of a \e[3mgit commit/push\e[0m, and ask for a message for your commit.\n"
+                echo -e "If entered with more arguments than just \e[3mgit\e[0m, it will just do your normal git commands that gets inserted."
+                echo -e "Example: \e[3mp5 git commit -m \"Deleted the entire repository\"2\e[0m will make a commit with that message, as it normally would.\n"
+            else
+                # echo "I'm in! Git Argument is: $@"
+                git $git_path $@
+            fi;
+        
+        else
+            echo "Doing full Git Commit motion for P5"
+            git $git_path pull
+            git $git_path add .
+            echo -e "\n \e[4m\e[1mWrite \e[3mcommit\e[23m message, please:\e[0m"
+            read msg
+            echo -e "\n\n"
+            git $git_path commit -m "$msg"
+            git $git_path push
+
+        fi;
+
+    # ----  Show the P5 directory in the Thunar explorer  ---- #
     elif [[ $@ = exp ]]         # Directory argument is entered
     then
-        echo "Opening P5 Directory in Thunar"
-        thunar $ns3_path             # Enter P5 directory in terminal
+        echo -e "Opening P5 Directory in \e[3m$explorer\e[0m"
+        $explorer $p5_path             # Enter P5 directory in your explorer
 
     else
     # elif [[ $@ = dir ]]         # Directory argument is entered
     # then
         echo "Entering P5 Directory"
-        cd $ns3_path/P5             # Enter P5 directory in terminal
+        cd $p5_path            # Enter P5 directory in terminal
 
     fi;
 }
+
