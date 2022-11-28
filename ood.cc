@@ -1,27 +1,3 @@
-/*      --  Out-of-Order Script --
-//  ----------------------------------
-    Network nodes: 21.142.213 satellites (COME ON ELON!, WHAT 'U GOT?)
-    Network template: SKRIV DET!
-
-    -------------------------
-// - Default Network Topology - \\
-
-
-                           +-- n5 --+
-                          /          \
-            (8Mbps, 5ms) /            \ (8Mbps, 5ms)
-                        /              \
-      (8Mbps, 5ms)     /                \     (8Mbps, 5ms)
-  n0 --------------- n1                  n3 --------------- n4
-                       \                /
-                        \              /
-            (2Mbps, 5ms) \            / (8Mbps, 5ms)
-                          \          /
-                           +-- n2 --+
-*/
-
-
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -35,13 +11,19 @@
 #include "ns3/internet-module.h"
 #include "ns3/netanim-module.h"
 #include "ns3/mobility-module.h"
+#include "ns3/flow-monitor-module.h"
 
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("two_routes");
 
+uint32_t prev = 0;
+Time prevTime = Seconds (0);
+
 static std::map<uint32_t, bool> firstCwnd;
+static std::map<uint32_t, bool> firstRtt;
 static std::map<uint32_t, Ptr<OutputStreamWrapper>> cWndStream;
+static std::map<uint32_t, Ptr<OutputStreamWrapper>> rttStream;
 static std::map<uint32_t, uint32_t> cWndValue;
 
 
@@ -78,6 +60,53 @@ TraceCwnd (std::string cwnd_tr_file_name, uint32_t nodeId)
                    MakeCallback (&CwndTracer));
 }
 
+static void
+RttTracer (std::string context, Time oldval, Time newval)
+{
+  uint32_t nodeId = GetNodeIdFromContext (context);
+
+  if (firstRtt[nodeId])
+    {
+      *rttStream[nodeId]->GetStream () << "0.0 " << oldval.GetSeconds () << std::endl;
+      firstRtt[nodeId] = false;
+    }
+  *rttStream[nodeId]->GetStream () << Simulator::Now ().GetSeconds () << " " << newval.GetSeconds () << std::endl;
+}
+
+static void
+TraceRtt (std::string rtt_tr_file_name, uint32_t nodeId)
+{
+  AsciiTraceHelper ascii;
+  rttStream[nodeId] = ascii.CreateFileStream (rtt_tr_file_name.c_str ());
+  Config::Connect ("/NodeList/" + std::to_string (nodeId) + "/$ns3::TcpL4Protocol/SocketList/0/RTT",
+                   MakeCallback (&RttTracer));
+}
+
+static void
+TraceThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
+{
+  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
+  // pointer to first value in stats
+  auto itr = stats.begin ();
+  // current time
+  Time curTime = Now ();
+  // ofstream is an output stream class to operate on files
+  // bitwise 'or' on either allowing output or appending to a stream
+  std::ofstream thr (tp_tr_file_name, std::ios::out | std::ios::app);
+  // write to stream:
+  // current time and
+  // transmitted bytes since last transmission divided by
+  // the time since last transmission
+  // which equals throughput (transmitted data over time)
+  thr <<  curTime << " " << 8 * (itr->second.txBytes - prev) / (1000 * 1000 * (curTime.GetSeconds () - prevTime.GetSeconds ())) << std::endl;
+  // current time and current transmitted bytes which for next iteration becomes 'previous'
+  prevTime = curTime;
+  prev = itr->second.txBytes;
+  // recursive call every x seconds
+  Simulator::Schedule (Seconds (0.02), &TraceThroughput, tp_tr_file_name, monitor);
+}
+
+
 int
 main (int argc, char *argv[])
 {
@@ -86,7 +115,7 @@ main (int argc, char *argv[])
   std::string transportProtocol = "ns3::TcpNewReno";
   std::string prefix_file_name = "two-routes";
 
-  Time simulationEndTime = Seconds (1.4);
+  Time simulationEndTime = Seconds (4.1);
   DataRate bottleneckBandwidth ("2Mbps");
   Time bottleneckDelay = MilliSeconds (5);
   DataRate regLinkBandwidth = DataRate (4 * bottleneckBandwidth.GetBitRate ());
@@ -231,16 +260,27 @@ main (int argc, char *argv[])
   p2p.EnablePcapAll ("two-routes");
 
   NS_LOG_INFO("Time of start " << Seconds(start_time+0.00001));
+  // Setup tracing for congestion window on node 0 and write results to file
   Simulator::Schedule (Seconds (start_time + 0.00001), &TraceCwnd,
                        prefix_file_name + "-cwnd.data", 0);
+  // Setup tracing for RTT
+  Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRtt,
+                       prefix_file_name + "-rtt.data", 0);
+
+  // Setup FlowMonitor and tracing for throughput
+  FlowMonitorHelper flowmon;
+  Ptr<FlowMonitor> monitor = flowmon.InstallAll ();
+  Simulator::Schedule (Seconds (start_time + 0.00001), &TraceThroughput,
+                       prefix_file_name + "-throughput.data", monitor);
+
   // Get node 1 and its ipv4
   Ptr<Node> n1 = c.Get (1);
   Ptr<Ipv4> n1ipv4 = n1->GetObject<Ipv4> ();
   // The first interfaceIndex is 0 for loopback, then the first p2p is numbered 1
-  uint32_t n1ipv4ifIndex0 = 2;
-  // uint32_t n1ipv4ifIndex1 = 2;
+  // The interface between node 1 and 2 has index 2:
+  uint32_t n1ipv4ifIndex2 = 2;
 
-  Simulator::Schedule (Seconds (start_time + 0.2), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex0);
+  Simulator::Schedule (Seconds (start_time + 2.6), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex2);
 
   NS_LOG_INFO ("Run Simulation.");
   Simulator::Stop(simulationEndTime);
