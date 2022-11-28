@@ -3,13 +3,17 @@
 # I know this is usually called ".bashaliases" instead, to hide the file... 
 # I like it better being visible... do and call it whatever you please, just remember to import the right filename in ".bashrc"
 
+#  --  UPDATE THESE TWO VARIABLES TO YOUR OWN!  --
 explorer="thunar"
 ns3_root="$HOME/Desktop/p5/ns3/ns-allinone-3.36.1"
+#  ----------
+
 ns3_path="$ns3_root/ns-3.36.1"
 p5_path="$ns3_path/P5"
 netanim_path="$ns3_root/netanim-3.108"
 output_dir="$ns3_path/output_files"
 git_path="--git-dir=$p5_path/.git --work-tree=$p5_path"
+p5_scripts=('con.cc' 'oc.cc' 'ood.cc' 'rc.cc' 'ro.cc' 'roc.cc' 'rtt.cc') 
 
 out="--cwd=$output_dir"      # Just added so you can write $out in weird cases where the ns() function is used in a way where it doesn't "catch" it.
 
@@ -19,9 +23,18 @@ alias up="source ~/bash_aliases"        # Update aliases & BASH functions in you
 alias netanim="$netanim_path/NetAnim"   # To start NetAnim, no matter "where you are"
 
 
+#  Object Orientet Helpers
+ste="192.168.1.76"
+sus="192.168.1.89"
+sim="192.168.1.105"
+chri="192.168.1.154"
+ub="192.168.1.182"
+
+
 # -------------------------- #
 # ----  NS-3 Shortcuts  ---- #
 ns() { 
+
     if [[ $@ = help ]]          # Help argument is entered
     then
         $ns3_path/ns3 --help     # Run NS-3 help function
@@ -41,6 +54,12 @@ ns() {
         echo -e "\n  \e[1m\e[5m\e[4mDON'T DO THIS!!!\e[0m \n" 
         echo "If you know what you're doing, call it manually in the NS-3 directory, you WILL need to reconfigure NS-3 after."
         echo -e "If you insist, use the command: \e[36mns configure --build-profile=debug --out=build/debug --enable-examples --enable-tests\e[0m"
+    
+    elif [[ $@ = config ]] 
+    then
+        echo "Configuring NS-3"
+        $ns3_path/ns3 configure --build-profile=debug --out=build/debug --enable-examples --enable-tests
+
 
     elif [[ $# -eq "1" ]] || [[ $1 = run ]]   # If wanting to run a script
     then
@@ -49,8 +68,6 @@ ns() {
             set -- "${@:2}"     # Remove the "run" argument
         fi;
 
-        #######################################
-        # -- Output Folder Name Creation --
         output_name=${1%% *}                # Sort our first argument, if set in quotes
         output_name=${output_name%.*}       # Remove file-extension if still there.
         output_name=${output_name##*/}      # Remove directory path, if still there.
@@ -62,6 +79,7 @@ ns() {
         fi;
 
 
+
         $ns3_path/ns3 run "$@" $out/$output_name        #Run the called NS-3 script, and put output files in the "output_files" directory
 
 
@@ -70,12 +88,11 @@ ns() {
             echo -e "\n\e[4mOutput files written to:\e[0m"
             echo -e "\e[3m$output_dir/$output_name\e[0m"
         fi;
-    
+
     else
         $ns3_path/ns3 "$@"       # If more than one argument (that isn't "run") is called, call everything "normally"
     fi; 
 }
-
 
 
 # ------------------------------- #
@@ -116,11 +133,36 @@ p5() {
             git $git_path add .
             echo -e "\n \e[4m\e[1mWrite \e[3mcommit\e[23m message, please:\e[0m"
             read msg
-            echo -e "\n\n"
+            echo -e "\n"
             git $git_path commit -m "$msg"
             git $git_path push
 
         fi;
+
+    # ----  Setup parsers from NS-3 to P5 scripts  ---- #
+    elif [[ $@ = setup ]]         # Setup argument is entered
+    then
+
+        for script in "${p5_scripts[@]}"
+        do
+            echo "Replacing #include with your absolute path & copying $script to NS-3"
+            
+            echo -e "// Insert your own P5 path here.
+                #include \"$p5_path/$script\"
+
+                // FUCK YOU NS-3... YOU CAN'T TELL ME HOW TO DO THINGS!
+
+                // main() {
+                // std::cout << \"FED LORT!\" << std::endl;
+                // }" > $ns3_path/scratch/$script
+
+        done
+
+        $ns3_path/ns3 clean
+        rm -R $ns3_path/build
+        ns config
+
+        echo -e "\n\n\e[1mAll parsers ready for usage in NS-3\e[0m"
 
     # ----  Show the P5 directory in the Thunar explorer  ---- #
     elif [[ $@ = exp ]]         # Directory argument is entered
@@ -136,4 +178,5 @@ p5() {
 
     fi;
 }
+
 

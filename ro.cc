@@ -22,3 +22,24 @@
 // REPLACE WITH A REAL SCRIPT!!!
 //
 // KEEP AND UPDATE THE TOP COMMENT/EXPLANATION
+
+
+///////////////////////////////////////////
+/////  --  Placeholder Code  --  
+//  NS-3 need "functioning code" for parser-files to be recognized
+///////////
+
+#include "ns3/core-module.h"
+
+using namespace ns3;
+
+NS_LOG_COMPONENT_DEFINE ("ScratchSimulator");
+
+int 
+main (int argc, char *argv[])
+{
+  NS_LOG_UNCOND ("Scratch Simulator");
+
+  Simulator::Run ();
+  Simulator::Destroy ();
+}
