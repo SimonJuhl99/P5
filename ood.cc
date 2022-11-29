@@ -108,11 +108,11 @@ TraceThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
 
 
 int
-main (int argc, char *argv[])
+run (std::string tcp_version)
 {
 
   uint32_t maxBytes = 0;
-  std::string transportProtocol = "ns3::TcpNewReno";
+  std::string transportProtocol = tcp_version;
   std::string prefix_file_name = "two-routes";
 
   Time simulationEndTime = Seconds (4.1);
@@ -129,10 +129,6 @@ main (int argc, char *argv[])
 
   LogComponentEnable("two_routes", LOG_LEVEL_ALL);
 
-  // Allow the user to override any of the defaults and the above
-  // Bind ()s at run-time, via command-line arguments
-  CommandLine cmd (__FILE__);
-  cmd.Parse (argc, argv);
 
   NS_LOG_INFO ("Create nodes.");
   NodeContainer c;
@@ -282,9 +278,26 @@ main (int argc, char *argv[])
 
   Simulator::Schedule (Seconds (start_time + 2.6), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex2);
 
-  NS_LOG_INFO ("Run Simulation.");
+  NS_LOG_INFO ("Starting Simulation.");
   Simulator::Stop(simulationEndTime);
   Simulator::Run ();
   Simulator::Destroy ();
-  NS_LOG_INFO ("Done.");
+  NS_LOG_INFO ("Simulation Done.");
+
+  return 1;
+}
+
+
+int
+main (int argc, char *argv[])
+{
+  // Allow the user to override any of the defaults and the above
+  // Bind ()s at run-time, via command-line arguments
+  CommandLine cmd (__FILE__);
+  cmd.Parse (argc, argv);
+
+  std::string tcp_version = "ns3::TcpBbr";
+  // std::string tcp_version = "ns3::TcpVegas";
+  // std::string tcp_version = "ns3::TcpNewReno";
+  run(tcp_version);
 }
