@@ -1,59 +1,19 @@
-/*      --  Congestion Script -- 
-//  --------------------------------
-    Network nodes: 21.142.213 satellites (COME ON ELON!, WHAT 'U GOT?)
-    Network template: SKRIV DET!
+#include "includes/general_setup.cc"
+// #include "includes/tracing.cc"
 
-    ------------------------- 
-// - Default Network Topology - \\
-
-       Wifi 10.1.3.0
-                     AP
-      *    *    *    *
-      |    |    |    |    10.1.1.0
-     n5   n6   n7   n0 -------------- n1   n2   n3   n4
-                       point-to-point  |    |    |    |
-                                       ================
-                                         LAN 10.1.2.0
-
-*/
-
-
-
-// REPLACE WITH A REAL SCRIPT!!!
-//
-// KEEP AND UPDATE THE TOP COMMENT/EXPLANATION
-
-#include <string>
-#include <fstream>
-#include "ns3/core-module.h"
-#include "ns3/point-to-point-module.h"
-#include "ns3/internet-module.h"
-#include "ns3/applications-module.h"
-#include "ns3/network-module.h"
-#include "ns3/packet-sink.h"
-#include "ns3/netanim-module.h"
-#include "ns3/mobility-module.h"
-
-using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("TcpBulkSendExample");
 
+
+
+
 int
-main (int argc, char *argv[])
+run (string tcp_version)
 {
 
   bool tracing = false;
   uint32_t maxBytes = 0;
 
-//
-// Allow the user to override any of the defaults at
-// run-time, via command-line arguments
-//
-  CommandLine cmd (__FILE__);
-  cmd.AddValue ("tracing", "Flag to enable/disable tracing", tracing);
-  cmd.AddValue ("maxBytes",
-                "Total number of bytes for application to send", maxBytes);
-  cmd.Parse (argc, argv);
 
 //
 // Explicitly create the nodes required by the topology (shown above).
@@ -136,7 +96,7 @@ main (int argc, char *argv[])
 // Add Animation 
 //
 
-   AnimationInterface anim ("tcp-bulk-send.xml");
+   AnimationInterface anim (tcp_version + ".xml");
 
   anim.UpdateNodeSize(nodes.Get(0)->GetId(), .1, .1);
   anim.UpdateNodeSize(nodes.Get(1)->GetId(), .1, .1);
@@ -211,6 +171,32 @@ Ipv4GlobalRoutingHelper::PopulateRoutingTables();
   std::cout << "Total Bytes Received at sink 1: " << Sink_A->GetTotalRx () << std::endl;
   std::cout << "Total Bytes Received at Sink 2: " << Sink_B->GetTotalRx () << std::endl;
 
-
+  return 1;
 }
+
+
+int
+main (int argc, char *argv[])
+{
+  ///////////////////
+  // --  Argument Area
+  bool verbose = true;
+  uint32_t nCsma = 3;
+  uint32_t nWifi = 3;
+  bool tracing = false;
+
+  CommandLine cmd (__FILE__);
+  cmd.AddValue ("nCsma", "Number of \"extra\" CSMA nodes/devices", nCsma);
+  cmd.AddValue ("nWifi", "Number of wifi STA devices", nWifi);
+  cmd.AddValue ("verbose", "Tell echo applications to log if true", verbose);
+  cmd.AddValue ("tracing", "Enable pcap tracing", tracing);
+
+  cmd.Parse (argc,argv);
+
+
+  run("Bbr");
+  run("Vegas");
+  run("NewReno");
+}
+
 
