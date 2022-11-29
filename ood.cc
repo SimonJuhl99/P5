@@ -14,6 +14,8 @@
 #include "ns3/flow-monitor-module.h"
 
 using namespace ns3;
+using std::string;
+using std::cout;
 
 NS_LOG_COMPONENT_DEFINE ("two_routes");
 
@@ -112,8 +114,8 @@ run (std::string tcp_version)
 {
 
   uint32_t maxBytes = 0;
-  std::string transportProtocol = tcp_version;
-  std::string prefix_file_name = "two-routes";
+  std::string transportProtocol = "ns3::Tcp" + tcp_version;
+  std::string prefix_file_name =  tcp_version;
 
   Time simulationEndTime = Seconds (4.1);
   DataRate bottleneckBandwidth ("2Mbps");
@@ -195,7 +197,7 @@ run (std::string tcp_version)
 
 
   // Create the animation object and configure for specified output
-  AnimationInterface anim ("two-routes.xml");
+  AnimationInterface anim ( tcp_version + ".xml");      // NetAnim Output File   <---
 
   Ptr<ConstantPositionMobilityModel> mn0 = c.Get (0)->GetObject<ConstantPositionMobilityModel> ();
   Ptr<ConstantPositionMobilityModel> mn1 = c.Get (1)->GetObject<ConstantPositionMobilityModel> ();
@@ -251,9 +253,9 @@ run (std::string tcp_version)
   sourceApp.Stop (simulationEndTime);
 
   AsciiTraceHelper ascii;
-  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ("two-routes.tr");
+  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream (tcp_version + ".tr");
   p2p.EnableAsciiAll (stream);
-  p2p.EnablePcapAll ("two-routes");
+  p2p.EnablePcapAll (tcp_version);
 
   NS_LOG_INFO("Time of start " << Seconds(start_time+0.00001));
   // Setup tracing for congestion window on node 0 and write results to file
@@ -278,7 +280,7 @@ run (std::string tcp_version)
 
   Simulator::Schedule (Seconds (start_time + 2.6), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex2);
 
-  NS_LOG_INFO ("Starting Simulation.");
+  NS_LOG_INFO ("\nStarting Simulation Using TCP " + tcp_version + ".");
   Simulator::Stop(simulationEndTime);
   Simulator::Run ();
   Simulator::Destroy ();
@@ -296,8 +298,7 @@ main (int argc, char *argv[])
   CommandLine cmd (__FILE__);
   cmd.Parse (argc, argv);
 
-  std::string tcp_version = "ns3::TcpBbr";
-  // std::string tcp_version = "ns3::TcpVegas";
-  // std::string tcp_version = "ns3::TcpNewReno";
-  run(tcp_version);
+  run("Bbr");
+  run("Vegas");
+  run("NewReno");
 }
