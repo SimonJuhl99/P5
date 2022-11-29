@@ -53,7 +53,7 @@ ns() {
     then
         echo -e "\n  \e[1m\e[5m\e[4mDON'T DO THIS!!!\e[0m \n" 
         echo "If you know what you're doing, call it manually in the NS-3 directory, you WILL need to reconfigure NS-3 after."
-        echo -e "If you insist, use the command: \e[36mns configure --build-profile=debug --out=build/debug --enable-examples --enable-tests\e[0m"
+        echo -e "If you insist, follow up with the command: \e[36mns config\e[0m"
     
     elif [[ $@ = config ]] 
     then
@@ -77,8 +77,6 @@ ns() {
         then
             mkdir -p $output_dir/$output_name
         fi;
-
-
 
         $ns3_path/ns3 run "$@" $out/$output_name        #Run the called NS-3 script, and put output files in the "output_files" directory
 

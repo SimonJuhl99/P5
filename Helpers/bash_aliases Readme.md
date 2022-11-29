@@ -17,11 +17,13 @@ fi
 
 4. Edit the `ns3_root` variable in the beginning of the script, to your personal local path of NS-3's *allinone* directory.    
 
-**Your terminal now needs to be restarted for it to "see" these functions.**
+5. Restart your terminal. Your terminal needs a restart for it to "see" these new functions.
 
-5. Finally run the ```p5 setup``` command in your restarted terminal, to prepare your NS-3 for parsing to the P5 directory.
+6. Finally run the ```p5 setup``` command in your restarted terminal, to prepare your NS-3 for parsing to the P5 directory.
 
 Now you can interact with NS-3 easier by using the *ns* and *p5* commands in your terminal.  
+
+*The P5 script names are found in the main Readme of this Git repository.*
 
 
 ## Usage  
