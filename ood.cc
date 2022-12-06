@@ -1,119 +1,17 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <cassert>
-
-#include "ns3/core-module.h"
-#include "ns3/network-module.h"
-#include "ns3/point-to-point-module.h"
-#include "ns3/csma-module.h"
-#include "ns3/applications-module.h"
-#include "ns3/internet-module.h"
-#include "ns3/netanim-module.h"
-#include "ns3/mobility-module.h"
-#include "ns3/flow-monitor-module.h"
-
-using namespace ns3;
-
-NS_LOG_COMPONENT_DEFINE ("two_routes");
-
-uint32_t prev = 0;
-Time prevTime = Seconds (0);
-
-static std::map<uint32_t, bool> firstCwnd;
-static std::map<uint32_t, bool> firstRtt;
-static std::map<uint32_t, Ptr<OutputStreamWrapper>> cWndStream;
-static std::map<uint32_t, Ptr<OutputStreamWrapper>> rttStream;
-static std::map<uint32_t, uint32_t> cWndValue;
+#include "includes/general_setup.cc"
+#include "includes/tracing.cc"
 
 
-static uint32_t
-GetNodeIdFromContext (std::string context)
-{
-  std::size_t const n1 = context.find_first_of ("/", 1);
-  std::size_t const n2 = context.find_first_of ("/", n1 + 1);
-  return std::stoul (context.substr (n1 + 1, n2 - n1 - 1));
-}
-
-static void
-CwndTracer (std::string context,  uint32_t oldval, uint32_t newval)
-{
-  //NS_LOG_INFO("Cwnd Started");
-  uint32_t nodeId = GetNodeIdFromContext (context);
-
-  if (firstCwnd[nodeId])
-    {
-      *cWndStream[nodeId]->GetStream () << "0.0 " << oldval << std::endl;
-      firstCwnd[nodeId] = false;
-    }
-  *cWndStream[nodeId]->GetStream () << Simulator::Now ().GetSeconds () << " " << newval << std::endl;
-  cWndValue[nodeId] = newval;
-}
-
-static void
-TraceCwnd (std::string cwnd_tr_file_name, uint32_t nodeId)
-{
-  //NS_LOG_INFO("TraceCwnd Start");
-  AsciiTraceHelper ascii;
-  cWndStream[nodeId] = ascii.CreateFileStream (cwnd_tr_file_name.c_str ());
-  Config::Connect ("/NodeList/" + std::to_string (nodeId) + "/$ns3::TcpL4Protocol/SocketList/0/CongestionWindow",
-                   MakeCallback (&CwndTracer));
-}
-
-static void
-RttTracer (std::string context, Time oldval, Time newval)
-{
-  uint32_t nodeId = GetNodeIdFromContext (context);
-
-  if (firstRtt[nodeId])
-    {
-      *rttStream[nodeId]->GetStream () << "0.0 " << oldval.GetSeconds () << std::endl;
-      firstRtt[nodeId] = false;
-    }
-  *rttStream[nodeId]->GetStream () << Simulator::Now ().GetSeconds () << " " << newval.GetSeconds () << std::endl;
-}
-
-static void
-TraceRtt (std::string rtt_tr_file_name, uint32_t nodeId)
-{
-  AsciiTraceHelper ascii;
-  rttStream[nodeId] = ascii.CreateFileStream (rtt_tr_file_name.c_str ());
-  Config::Connect ("/NodeList/" + std::to_string (nodeId) + "/$ns3::TcpL4Protocol/SocketList/0/RTT",
-                   MakeCallback (&RttTracer));
-}
-
-static void
-TraceThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
-{
-  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
-  // pointer to first value in stats
-  auto itr = stats.begin ();
-  // current time
-  Time curTime = Now ();
-  // ofstream is an output stream class to operate on files
-  // bitwise 'or' on either allowing output or appending to a stream
-  std::ofstream thr (tp_tr_file_name, std::ios::out | std::ios::app);
-  // write to stream:
-  // current time and
-  // transmitted bytes since last transmission divided by
-  // the time since last transmission
-  // which equals throughput (transmitted data over time)
-  thr <<  curTime << " " << 8 * (itr->second.txBytes - prev) / (1000 * 1000 * (curTime.GetSeconds () - prevTime.GetSeconds ())) << std::endl;
-  // current time and current transmitted bytes which for next iteration becomes 'previous'
-  prevTime = curTime;
-  prev = itr->second.txBytes;
-  // recursive call every x seconds
-  Simulator::Schedule (Seconds (0.02), &TraceThroughput, tp_tr_file_name, monitor);
-}
+NS_LOG_COMPONENT_DEFINE ("Out of order delivery");
 
 
 int
-main (int argc, char *argv[])
+run (string tcp_version)
 {
 
   uint32_t maxBytes = 0;
-  std::string transportProtocol = "ns3::TcpNewReno";
-  std::string prefix_file_name = "two-routes";
+  string transportProtocol = "ns3::Tcp" + tcp_version;
+  string prefix_file_name =  tcp_version;
 
   Time simulationEndTime = Seconds (4.1);
   DataRate bottleneckBandwidth ("2Mbps");
@@ -127,12 +25,8 @@ main (int argc, char *argv[])
   Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (transportProtocol)));
   Config::SetDefault ("ns3::TcpSocket::InitialCwnd", UintegerValue (10));
 
-  LogComponentEnable("two_routes", LOG_LEVEL_ALL);
+  LogComponentEnable("Out of order delivery", LOG_LEVEL_ALL);
 
-  // Allow the user to override any of the defaults and the above
-  // Bind ()s at run-time, via command-line arguments
-  CommandLine cmd (__FILE__);
-  cmd.Parse (argc, argv);
 
   NS_LOG_INFO ("Create nodes.");
   NodeContainer c;
@@ -199,7 +93,7 @@ main (int argc, char *argv[])
 
 
   // Create the animation object and configure for specified output
-  AnimationInterface anim ("two-routes.xml");
+  AnimationInterface anim ( tcp_version + ".xml");      // NetAnim Output File   <---
 
   Ptr<ConstantPositionMobilityModel> mn0 = c.Get (0)->GetObject<ConstantPositionMobilityModel> ();
   Ptr<ConstantPositionMobilityModel> mn1 = c.Get (1)->GetObject<ConstantPositionMobilityModel> ();
@@ -255,9 +149,9 @@ main (int argc, char *argv[])
   sourceApp.Stop (simulationEndTime);
 
   AsciiTraceHelper ascii;
-  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ("two-routes.tr");
+  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream (tcp_version + ".tr");
   p2p.EnableAsciiAll (stream);
-  p2p.EnablePcapAll ("two-routes");
+  p2p.EnablePcapAll (tcp_version);
 
   NS_LOG_INFO("Time of start " << Seconds(start_time+0.00001));
   // Setup tracing for congestion window on node 0 and write results to file
@@ -282,9 +176,36 @@ main (int argc, char *argv[])
 
   Simulator::Schedule (Seconds (start_time + 2.6), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex2);
 
-  NS_LOG_INFO ("Run Simulation.");
+  NS_LOG_INFO ("\nStarting Simulation Using TCP " + tcp_version + ".");
   Simulator::Stop(simulationEndTime);
   Simulator::Run ();
   Simulator::Destroy ();
-  NS_LOG_INFO ("Done.");
+  NS_LOG_INFO ("Simulation Done.");
+
+  return 1;
+}
+
+
+int
+main (int argc, char *argv[])
+{
+  ///////////////////
+  // --  Argument Area
+  bool verbose = true;
+  uint32_t nCsma = 3;
+  uint32_t nWifi = 3;
+  bool tracing = false;
+
+  CommandLine cmd (__FILE__);
+  cmd.AddValue ("nCsma", "Number of \"extra\" CSMA nodes/devices", nCsma);
+  cmd.AddValue ("nWifi", "Number of wifi STA devices", nWifi);
+  cmd.AddValue ("verbose", "Tell echo applications to log if true", verbose);
+  cmd.AddValue ("tracing", "Enable pcap tracing", tracing);
+
+  cmd.Parse (argc,argv);
+
+
+  run("Bbr");
+  run("Vegas");
+  run("NewReno");
 }

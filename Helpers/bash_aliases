@@ -53,7 +53,7 @@ ns() {
     then
         echo -e "\n  \e[1m\e[5m\e[4mDON'T DO THIS!!!\e[0m \n" 
         echo "If you know what you're doing, call it manually in the NS-3 directory, you WILL need to reconfigure NS-3 after."
-        echo -e "If you insist, use the command: \e[36mns configure --build-profile=debug --out=build/debug --enable-examples --enable-tests\e[0m"
+        echo -e "If you insist, follow up with the command: \e[36mns config\e[0m"
     
     elif [[ $@ = config ]] 
     then
@@ -71,22 +71,37 @@ ns() {
         output_name=${1%% *}                # Sort our first argument, if set in quotes
         output_name=${output_name%.*}       # Remove file-extension if still there.
         output_name=${output_name##*/}      # Remove directory path, if still there.
+        output_name="$output_dir/$output_name"
 
 
-        if [ ! -d $output_dir/$output_name ]
+        # echo "Output Name: $output_name"
+
+        if [ ! -d $output_name ]
         then
-            mkdir -p $output_dir/$output_name
+            mkdir -p $output_name
+        #     echo "Re-running \"$1\" - Overwriting Old Files"
+        # else
+        #     echo "First Time Running \"$1\" - Creating Output Directory"
         fi;
 
 
 
-        $ns3_path/ns3 run "$@" $out/$output_name        #Run the called NS-3 script, and put output files in the "output_files" directory
-
+        $ns3_path/ns3 run "$@" --cwd=$output_name        #Run the called NS-3 script, and put output files in the "output_files" directory
 
         # If there's output files, tell the user... otherwise delete the empty folder.
-        if ! rmdir $output_dir/$output_name 2> /dev/null; then
+        if ! rmdir $output_name 2> /dev/null; 
+        then
+
+            # If pcap files has been created, throw them in their own directory
+            count=`ls -d $output_name -1 *.pcap 2>/dev/null | wc -l`
+            if [ $count != 0 ]
+            then 
+                mkdir -p $output_name/pcap
+                mv $output_name/*.pcap $output_name/pcap/
+            fi 
+
             echo -e "\n\e[4mOutput files written to:\e[0m"
-            echo -e "\e[3m$output_dir/$output_name\e[0m"
+            echo -e "\e[3m$output_name\e[0m"
         fi;
 
     else
