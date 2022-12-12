@@ -10,12 +10,12 @@ This will give you a new directory like ```ns-3.36.1/P5``` where this Git is ins
 All scripts here are the currently used version.  
 
 ```rtt.cc``` script for *Round-Trip Time*.  
-```ood.cc``` script for *Out of Order Delivery*.  
+```ood.cc``` script for *Rerouting*.  
 ```con.cc``` script for *Congestion*.  
 
-```ro.cc``` script for combined *Round-Trip Time* & *Out of Order Delivery*.  
+```ro.cc``` script for combined *Round-Trip Time* & *Rerouting*.  
 ```rc.cc``` script for combined *Round-Trip Time* & *Congestion*.  
-```oc.cc``` script for combined *Out of Order Delivery* & *Congestion*.  
+```oc.cc``` script for combined *Rerouting* & *Congestion*.  
 ```roc.cc``` script for **all three** combined.  
 
 #### Version Naming Scheme
