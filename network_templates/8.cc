@@ -54,6 +54,10 @@ Ptr<ConstantPositionMobilityModel> mn5;
 Ptr<ConstantPositionMobilityModel> mn6;
 Ptr<ConstantPositionMobilityModel> mn7;
 
+// AsciiTraceHelper ascii;
+FlowMonitorHelper flowmon;
+// Ptr<FlowMonitor> monitor = flowmon.InstallAll ();
+Ptr<FlowMonitor> monitor;
 
 
 // DataRate regLinkBandwidth = DataRate (4 * bottleneckBandwidth.GetBitRate ());
@@ -66,25 +70,32 @@ build_network (string tcp_version)
 {
   string transportProtocol = "ns3::Tcp" + tcp_version;
 
-  Config::SetDefault ("ns3::BulkSendApplication::SendSize", UintegerValue (100000));
-  Config::SetDefault ("ns3::Ipv4GlobalRouting::RespondToInterfaceEvents", BooleanValue (true));
-  Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (transportProtocol)));
-  Config::SetDefault ("ns3::TcpSocket::InitialCwnd", UintegerValue (10));
 
-  LogComponentEnable(scenario, LOG_LEVEL_ALL);
+  // Source Setup
+  Config::SetDefault ("ns3::BulkSendApplication::SendSize", UintegerValue (100000));    // Change the packetsize of a source application
+  //Config::SetDefault ("ns3::BulkSendApplication::DataRate", StringValue ("448kb/s"));    // Change the datarate of source applications
 
-  NS_LOG_INFO ("\n\nCreating nodes.");
+
+  // General Setup
+  Config::SetDefault ("ns3::Ipv4GlobalRouting::RespondToInterfaceEvents", BooleanValue (true));     // Respond to routing table changes
+  Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (transportProtocol)));    // Tell which TCP version to use
+  Config::SetDefault ("ns3::TcpSocket::InitialCwnd", UintegerValue (10));   // Set initial congestion window value
+
+  LogComponentEnable(scenario, LOG_LEVEL_ALL);    // Initiate logging
+
+  ////////////////////////////////////////////
+  //  --  Start actual network setup  --
+  NS_LOG_INFO ("\nCreating nodes.");
   c.Create (8);
 
 
   n0n2 = NodeContainer (c.Get (0), c.Get (2));    // Nye ende noder
   n1n2 = NodeContainer (c.Get (1), c.Get (2));    // Nye ende noder
-  n2n3 = NodeContainer (c.Get (2), c.Get (3));    // Gammel n0n1 (samling af 2 ender)
-
-  n3n4 = NodeContainer (c.Get (3), c.Get (4));    // Gammel n1n5 (tror jeg)
-  n3n5 = NodeContainer (c.Get (3), c.Get (5));    // Gammel n1n2 (tror jeg)
-  n4n6 = NodeContainer (c.Get (4), c.Get (6));    // Gammel n5n3 (tror jeg)
-  n5n6 = NodeContainer (c.Get (5), c.Get (6));    // Gammel n2n3 (tror jeg)
+  n2n3 = NodeContainer (c.Get (2), c.Get (3));    // Gammel n0n1
+  n3n4 = NodeContainer (c.Get (3), c.Get (4));    // Gammel n1n5
+  n3n5 = NodeContainer (c.Get (3), c.Get (5));    // Gammel n1n2
+  n4n6 = NodeContainer (c.Get (4), c.Get (6));    // Gammel n5n3
+  n5n6 = NodeContainer (c.Get (5), c.Get (6));    // Gammel n2n3
   n6n7 = NodeContainer (c.Get (6), c.Get (7));    // Gammel n3n4
 
   MobilityHelper mobility;
@@ -96,11 +107,11 @@ build_network (string tcp_version)
 
   // We create the channels first without any IP addressing information
   NS_LOG_INFO ("Creating channels.");
-  // PointToPointHelper p2p;
 
   p2p.SetDeviceAttribute ("DataRate", DataRateValue (regLinkBandwidth));
   p2p.SetChannelAttribute ("Delay", TimeValue (regLinkDelay));
 
+  // Setup the connection between a net-devices in each end
   device_container[0] = p2p.Install (n0n2);
   device_container[1] = p2p.Install (n1n2);
   device_container[2] = p2p.Install (n2n3);   // Gammel d0d1
@@ -118,12 +129,16 @@ build_network (string tcp_version)
   // p2p.SetChannelAttribute ("Delay", TimeValue (bottleneckDelay));
   // device_container[6] = p2p.Install (n5n6);   // Gammel d2d3
 
-  //  ----------------------
-  //  --  IP setup  --
+
+
+  /*  ----------------------------
+  //    --  IP address setup  --
+  //  ----------------------------
+  //  Setting up Subnets for each (single P2P connection) network
+  //  IP's will be assigned from these subnet values.
+  */
   Ipv4AddressHelper ipv4;
 
-  // -- Setting up Subnets for each network (single P2P connection)
-  // -- IP's will be assigned from these subnet values.
   ipv4.SetBase ("10.1.1.0", "255.255.255.0");
   node_interface[0] = ipv4.Assign (device_container[0]);
 
@@ -185,7 +200,14 @@ build_network (string tcp_version)
   anim.UpdateNodeSize( c.Get(6)->GetId(), .1, .1 );
   anim.UpdateNodeSize( c.Get(7)->GetId(), .1, .1 );
 
+
+ // Tracing Ascii Data Setup, tracing every single thing happening in the network
+  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ( tcp_version + ".tr" );
+  p2p.EnableAsciiAll ( stream );
+  // p2p.EnablePcapAll ( tcp_version );
+
+  monitor = flowmon.InstallAll ();
+
+
   return anim;
 }
-
-

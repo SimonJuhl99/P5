@@ -1,3 +1,17 @@
+// Old tracing
+// uint32_t prev = 0;
+// Time prevTime = Seconds (0);
+
+
+// Tracing
+
+uint32_t prevTx = 0;    // Earlier values for throughput tracing
+uint32_t prevRx = 0;    // Earlier values for throughput tracing
+Time prevTxTime = Seconds (0);    // Earlier timestamps for throughput tracing
+Time prevRxTime = Seconds (0);    // Earlier timestamps for throughput tracing
+
+AsciiTraceHelper ascii;
+
 static uint32_t
 GetNodeIdFromContext (string context)
 {
@@ -26,7 +40,7 @@ static void
 TraceCwnd (string cwnd_tr_file_name, uint32_t nodeId)
 {
   //NS_LOG_INFO("TraceCwnd Start");
-  AsciiTraceHelper ascii;
+  // AsciiTraceHelper ascii;
   cWndStream[nodeId] = ascii.CreateFileStream (cwnd_tr_file_name.c_str ());
   Config::Connect ("/NodeList/" + std::to_string (nodeId) + "/$ns3::TcpL4Protocol/SocketList/0/CongestionWindow",
                    MakeCallback (&CwndTracer));
@@ -70,11 +84,66 @@ TraceThroughput (string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   // transmitted bytes since last transmission divided by
   // the time since last transmission
   // which equals throughput (transmitted data over time)
-  thr <<  curTime << " " << 8 * (itr->second.txBytes - prev) / (1000 * 1000 * (curTime.GetSeconds () - prevTime.GetSeconds ())) << std::endl;
+  thr <<  curTime << " " << 8 * (itr->second.txBytes - prevTx) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
   // current time and current transmitted bytes which for next iteration becomes 'previous'
-  prevTime = curTime;
-  prev = itr->second.txBytes;
+  prevTxTime = curTime;
+  prevTx = itr->second.txBytes;
   // recursive call every x seconds
-  Simulator::Schedule (Seconds (0.02), &TraceThroughput, tp_tr_file_name, monitor);
+  Simulator::Schedule (Seconds (0.5), &TraceThroughput, tp_tr_file_name, monitor);
 }
 
+//////////////////////////////////////////////////////////////////////
+//  --  Skriv de 2 herunder sammen til én samlet, i den ovenover  -- 
+///////////////////////
+
+static void
+TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
+{
+  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
+  // pointer to first value in stats
+  auto itr = stats.begin ();
+  // current time
+  Time curTime = Now ();
+  // ofstream is an output stream class to operate on files
+  // bitwise 'or' on either allowing output or appending to a stream
+  std::ofstream thr (tp_tr_file_name, std::ios::out | std::ios::app);
+  // write to stream:
+  // current time and
+  // transmitted bytes since last transmission divided by
+  // the time since last transmission
+  // which equals throughput (transmitted data over time)
+  thr <<  curTime << " " << 8 * (itr->second.txBytes - prevTx) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
+  // current time and current transmitted bytes which for next iteration becomes 'previous'
+  prevTxTime = curTime;
+  prevTx = itr->second.txBytes;
+  // recursive call every x seconds
+  Simulator::Schedule (Seconds (0.5), &TraceTxThroughput, tp_tr_file_name, monitor);
+}
+
+
+static void
+TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
+{
+  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
+  // pointer to first value in stats
+  auto itr = stats.begin ();
+  // current time
+  Time curTime = Now ();
+  // ofstream is an output stream class to operate on files
+  // bitwise 'or' on either allowing output or appending to a stream
+  std::ofstream thr (tp_tr_file_name, std::ios::out | std::ios::app);
+  // write to stream:
+  // current time and
+  // transmitted bytes since last transmission divided by
+  // the time since last transmission
+  // which equals throughput (transmitted data over time)
+  thr <<  curTime << " " << 8 * (itr->second.rxBytes - prevRx) / (1000 * 1000 * (curTime.GetSeconds () - prevRxTime.GetSeconds ())) << std::endl;
+
+  // thr <<  curTime << " " << itr->second.rxBytes << " " << prev  << std::endl;
+  //<< i->second.rxBytes * 8.0 / simulationEndTime.GetSeconds () / 1000 / 1000  << " Mbps\n";
+  // current time and current transmitted bytes which for next iteration becomes 'previous'
+  prevRxTime = curTime;
+  prevRx = itr->second.rxBytes;
+  // recursive call every x seconds
+  Simulator::Schedule (Seconds (0.5), &TraceRxThroughput, tp_tr_file_name, monitor);
+}
