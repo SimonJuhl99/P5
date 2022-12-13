@@ -58,22 +58,35 @@ axs[0,1].set_title('Round-trip time')
 #axs[0,1].plot(rxtp_time, rxtp_values, color='red')
 axs[0,1].plot(rtt_time, rtt_values, color='red')
 
+twin_tp_plot = axs[1,0].twinx()
 axs[1,0].set_title('Throughput')
-axs[1,0].plot(txtp_time, txtp_values, color='green')
+comb_tp_p1 = axs[1,0].plot(txtp_time, txtp_values, color='darkgreen', label="txOffered")
+comb_tp_p2 = twin_tp_plot.plot(rxtp_time, rxtp_values, color='lightgreen', label="TP")
+
+axs[1,0].set_ylabel("tx")
+twin_tp_plot.set_ylabel("rx")
+
+tp_plt_ylim = axs[1,0].get_ylim()[1]
+axs[1,0].set_ylim(0, tp_plt_ylim)
+twin_tp_plot.set_ylim(0, tp_plt_ylim)
 
 # Combined plot
 twin1 = axs[1,1].twinx()
 twin2 = axs[1,1].twinx()
+twin3 = axs[1,1].twinx()
 
 # offset right spine of twin2
 twin2.spines.right.set_position(("axes", 1.1))
+twin3.spines.right.set_position(("axes", 1.1))
 
 axs[1,1].set_title('Combined')
 
 # Create plots with values and define colors and labels
 comb_p1, = axs[1,1].plot(cwnd_time, cwnd_values, "b-", label="CWND")
 comb_p2, = twin1.plot(rtt_time, rtt_values, "r-", label="RTT")
-comb_p3, = twin2.plot(txtp_time, txtp_values, "g-", label="TP")
+comb_p3, = twin2.plot(txtp_time, txtp_values, color='darkgreen', label="txOffered")
+comb_p4, = twin3.plot(rxtp_time, rxtp_values, color='lightgreen', label="TP")
+
 
 cwnd_ylim = axs[0,0].get_ylim()[1]
 rtt_ylim = axs[0,1].get_ylim()[1]
@@ -83,8 +96,8 @@ tp_ylim = axs[1,0].get_ylim()[1]
 #axs[1,1].set_xlim(1, 4.2)
 axs[1,1].set_ylim(0, cwnd_ylim)
 twin1.set_ylim(0, rtt_ylim*1.2)
-#twin1.set_ylim(0, tp_ylim*1.4)
 twin2.set_ylim(0, tp_ylim*1.4)
+twin3.set_ylim(0, tp_ylim*1.4)
 
 # Set labels of axes
 axs[1,1].set_xlabel("Time")
@@ -104,7 +117,7 @@ twin1.tick_params(axis='y', colors=comb_p2.get_color(), **tkw)
 twin2.tick_params(axis='y', colors=comb_p3.get_color(), **tkw)
 axs[1,1].tick_params(axis='x', **tkw)
 
-axs[1,1].legend(handles=[comb_p1, comb_p2, comb_p3])
+axs[1,1].legend(handles=[comb_p1, comb_p2, comb_p3, comb_p4])
 axs[1,1].grid(True)
 
 plt.show()

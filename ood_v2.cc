@@ -17,13 +17,17 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("two_routes");
 
-uint32_t prev = 0;
-Time prevTime = Seconds (0);
+uint32_t prevTx = 0;
+uint32_t prevRx = 0;
+Time prevTxTime = Seconds (0);
+Time prevRxTime = Seconds (0);
 
 static std::map<uint32_t, bool> firstCwnd;
 static std::map<uint32_t, bool> firstRtt;
+static std::map<uint32_t, bool> firstRto;
 static std::map<uint32_t, Ptr<OutputStreamWrapper>> cWndStream;
 static std::map<uint32_t, Ptr<OutputStreamWrapper>> rttStream;
+static std::map<uint32_t, Ptr<OutputStreamWrapper>> rtoStream;
 static std::map<uint32_t, uint32_t> cWndValue;
 
 
@@ -114,12 +118,12 @@ TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   // transmitted bytes since last transmission divided by
   // the time since last transmission
   // which equals throughput (transmitted data over time)
-  thr <<  curTime << " " << 8 * (itr->second.txBytes - prev) / (1000 * 1000 * (curTime.GetSeconds () - prevTime.GetSeconds ())) << std::endl;
+  thr <<  curTime << " " << 8 * (itr->second.txBytes - prevTx) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
   // current time and current transmitted bytes which for next iteration becomes 'previous'
-  prevTime = curTime;
-  prev = itr->second.txBytes;
+  prevTxTime = curTime;
+  prevTx = itr->second.txBytes;
   // recursive call every x seconds
-  Simulator::Schedule (Seconds (0.05), &TraceTxThroughput, tp_tr_file_name, monitor);
+  Simulator::Schedule (Seconds (0.5), &TraceTxThroughput, tp_tr_file_name, monitor);
 }
 
 static void
@@ -138,13 +142,17 @@ TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   // transmitted bytes since last transmission divided by
   // the time since last transmission
   // which equals throughput (transmitted data over time)
-  thr <<  curTime << " " << 8 * (itr->second.rxBytes - prev) / (1000 * 1000 * (curTime.GetSeconds () - prevTime.GetSeconds ())) << std::endl;
+  thr <<  curTime << " " << 8 * (itr->second.rxBytes - prevRx) / (1000 * 1000 * (curTime.GetSeconds () - prevRxTime.GetSeconds ())) << std::endl;
+
+  // thr <<  curTime << " " << itr->second.rxBytes << " " << prev  << std::endl;
+  //<< i->second.rxBytes * 8.0 / simulationEndTime.GetSeconds () / 1000 / 1000  << " Mbps\n";
   // current time and current transmitted bytes which for next iteration becomes 'previous'
-  prevTime = curTime;
-  prev = itr->second.rxBytes;
+  prevRxTime = curTime;
+  prevRx = itr->second.rxBytes;
   // recursive call every x seconds
-  Simulator::Schedule (Seconds (0.05), &TraceRxThroughput, tp_tr_file_name, monitor);
+  Simulator::Schedule (Seconds (0.5), &TraceRxThroughput, tp_tr_file_name, monitor);
 }
+
 
 int
 main (int argc, char *argv[])
@@ -154,7 +162,7 @@ main (int argc, char *argv[])
   std::string transportProtocol = "ns3::TcpNewReno";
   std::string prefix_file_name = "two-routes";
 
-  Time simulationEndTime = Seconds (12);
+  Time simulationEndTime = Seconds (80);
   DataRate bottleneckBandwidth ("1Mbps");
   Time bottleneckDelay = MilliSeconds (5);
   DataRate regLinkBandwidth = DataRate (1 * bottleneckBandwidth.GetBitRate ());
@@ -164,7 +172,7 @@ main (int argc, char *argv[])
   //Config::SetDefault ("ns3::BulkSendApplication::DataRate", StringValue ("448kb/s"));
   Config::SetDefault ("ns3::Ipv4GlobalRouting::RespondToInterfaceEvents", BooleanValue (true));
   Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (transportProtocol)));
-  Config::SetDefault ("ns3::TcpSocket::InitialCwnd", UintegerValue (10));
+  //Config::SetDefault ("ns3::TcpSocket::InitialCwnd", UintegerValue (10));
 
   LogComponentEnable("two_routes", LOG_LEVEL_ALL);
 
@@ -284,25 +292,18 @@ main (int argc, char *argv[])
   sinkApp.Start (Seconds (0));
   sinkApp.Stop (simulationEndTime);
 
-  // Randomize the start time between 0 and 1ms
-  Ptr<UniformRandomVariable> uniformRv = CreateObject<UniformRandomVariable> ();
-  uniformRv->SetStream (0);
 
   BulkSendHelper source ("ns3::TcpSocketFactory", sinkAddress);
   source.SetAttribute ("MaxBytes", UintegerValue (maxBytes));
   ApplicationContainer sourceApp = source.Install (c.Get (0));
 
-  //sourceApp.Start (Seconds (0));
-  //int start_time = uniformRv->GetInteger (0, 1000);
-
-  //sourceApp.Start (MilliSeconds(start_time));
   int start_time = 1;
   sourceApp.Start(Seconds(start_time));
   sourceApp.Stop (simulationEndTime);
 
-  AsciiTraceHelper ascii;
-  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ("two-routes.tr");
-  p2p.EnableAsciiAll (stream);
+  //AsciiTraceHelper ascii;
+  //Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ("two-routes.tr");
+  //p2p.EnableAsciiAll (stream);
   p2p.EnablePcapAll ("two-routes");
 
   NS_LOG_INFO("Time of start " << Seconds(start_time+0.00001));
@@ -331,28 +332,23 @@ main (int argc, char *argv[])
 
   Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex3);
 
-  Simulator::Schedule (Seconds (start_time + 3), &Ipv4::SetUp, n1ipv4, n1ipv4ifIndex3);
-  Simulator::Schedule (Seconds (start_time + 3), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex2);
-  Simulator::Schedule (Seconds (start_time + 3), &ActivateError, d1d2.Get (1), true);
+  Simulator::Schedule (Seconds (start_time + 70), &Ipv4::SetUp, n1ipv4, n1ipv4ifIndex3);
+  Simulator::Schedule (Seconds (start_time + 70), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex2);
+  Simulator::Schedule (Seconds (start_time + 70), &ActivateError, d1d2.Get (1), true);
 
-  Simulator::Schedule (Seconds (start_time + 6), &ActivateError, d1d2.Get (1), false);
-  Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetUp, n1ipv4, n1ipv4ifIndex2);
-  Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex3);
-  Simulator::Schedule (Seconds (start_time + 6), &ActivateError, d1d5.Get (1), true);
-
-  Simulator::Schedule (Seconds (start_time + 9), &ActivateError, d1d5.Get (1), false);
-  Simulator::Schedule (Seconds (start_time + 9), &Ipv4::SetUp, n1ipv4, n1ipv4ifIndex3);
-  Simulator::Schedule (Seconds (start_time + 9), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex2);
-  Simulator::Schedule (Seconds (start_time + 9), &ActivateError, d1d2.Get (1), true);
+  // Simulator::Schedule (Seconds (start_time + 6), &ActivateError, d1d2.Get (1), false);
+  // Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetUp, n1ipv4, n1ipv4ifIndex2);
+  // Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex3);
+  // Simulator::Schedule (Seconds (start_time + 6), &ActivateError, d1d5.Get (1), true);
+  //
+  // Simulator::Schedule (Seconds (start_time + 9), &ActivateError, d1d5.Get (1), false);
+  // Simulator::Schedule (Seconds (start_time + 9), &Ipv4::SetUp, n1ipv4, n1ipv4ifIndex3);
+  // Simulator::Schedule (Seconds (start_time + 9), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex2);
+  // Simulator::Schedule (Seconds (start_time + 9), &ActivateError, d1d2.Get (1), true);
 
   NS_LOG_INFO ("Run Simulation.");
   Simulator::Stop(simulationEndTime);
   Simulator::Run ();
-
-
-
-
-
 
   monitor->CheckForLostPackets ();
   Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
@@ -374,9 +370,6 @@ main (int argc, char *argv[])
       //i->second.flowInterruptionsHistogram.SerializeToXmlStream(os, 2, "flowInterruptionsHistogram");
       //std::cout << "  Flow Interruptions Histogram:\n" << i->second.flowInterruptionsHistogram << "\n------------------\n";
     }
-
-
-
 
   Simulator::Destroy ();
   NS_LOG_INFO ("Done.");
