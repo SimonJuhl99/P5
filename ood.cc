@@ -28,11 +28,11 @@ run (string tcp_version)
 
   // Create bottleneck in one of the links
 
-  DataRate bottleneckBandwidth ("1Mbps");
-  Time bottleneckDelay = MilliSeconds (5);
-  p2p.SetDeviceAttribute ("DataRate", DataRateValue (bottleneckBandwidth));
-  p2p.SetChannelAttribute ("Delay", TimeValue (bottleneckDelay));
-  device_container[6] = p2p.Install (n5n6);   // Gammel d2d3
+  // DataRate bottleneckBandwidth ("1Mbps");
+  // Time bottleneckDelay = MilliSeconds (5);
+  // p2p.SetDeviceAttribute ("DataRate", DataRateValue (bottleneckBandwidth));
+  // p2p.SetChannelAttribute ("Delay", TimeValue (bottleneckDelay));
+  // link_container[6] = p2p.Install (n5n6);   // Gammel d2d3
 
 
 
@@ -45,7 +45,7 @@ run (string tcp_version)
   // Get node 3 and its ipv4, to prepare changing route
   Ptr<Node> n3 = c.Get (3);   // Grap third node (before forking)
   Ptr<Ipv4> n3ipv4 = n3->GetObject<Ipv4> ();
-  // The first interfaceIndex is 0 for loopback, then the first p2p is numbered 1
+  // The first interfaceIndex is 0 for loopback, then the first p2p connection is numbered 1, numbered by order of creation.
   uint32_t n3_to_n4_index = 2;    // Connection index between node 3 & 4
   // uint32_t n3_to_n5_index = 3;    // Connection index between node 3 & 5
 
@@ -55,26 +55,26 @@ run (string tcp_version)
   //  ---------------------------------------
   //  --  Simulation Rerouting Scheduling  -- 
 
-  float reroute_time = start_time + 6.02;
+  float reroute_time = start_time + 6.027;
 
   // SetDown & SetUp opens and closes that specific connection.
   Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n3ipv4, n3_to_n4_index);
   Simulator::Schedule (Seconds (reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n4_index);
   // Simulator::Schedule (Seconds (reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_index);
-  Simulator::Schedule (Seconds (reroute_time), &ActivateError, device_container[4].Get (1), true);
+  // Simulator::Schedule (Seconds (reroute_time), &ActivateError, link_container[4].Get (1), true);
 
 
 
 
-  // Simulator::Schedule (Seconds (start_time + 6), &ActivateError, device_container[4].Get (1), false);
+  // Simulator::Schedule (Seconds (start_time + 6), &ActivateError, link_container[4].Get (1), false);
   // Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetUp, n3ipv4, n3_to_n5_index);
   // Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetDown, n3ipv4, n3_to_n3_index);
-  // Simulator::Schedule (Seconds (start_time + 6), &ActivateError, device_container[3].Get (1), true);
+  // Simulator::Schedule (Seconds (start_time + 6), &ActivateError, link_container[3].Get (1), true);
 
-  // Simulator::Schedule (Seconds (start_time + 9), &ActivateError, device_container[3].Get (1), false);
+  // Simulator::Schedule (Seconds (start_time + 9), &ActivateError, link_container[3].Get (1), false);
   // Simulator::Schedule (Seconds (start_time + 9), &Ipv4::SetUp, n3ipv4, n3_to_n4_index);
   // Simulator::Schedule (Seconds (start_time + 9), &Ipv4::SetDown, n3ipv4, n3_to_n5_index);
-  // Simulator::Schedule (Seconds (start_time + 9), &ActivateError, device_container[4].Get (1), true);
+  // Simulator::Schedule (Seconds (start_time + 9), &ActivateError, link_container[4].Get (1), true);
 
 
 
@@ -109,11 +109,17 @@ run (string tcp_version)
   //     //std::cout << "  Flow Interruptions Histogram:\n" << i->second.flowInterruptionsHistogram << "\n------------------\n";
   //   }
 
+  // auto itr = stats.begin ();  
+  
   Simulator::Destroy ();
   NS_LOG_INFO ("Simulation Done.");
 
+
+  /////////////////////////////////////////////////
+  //  --  Prepare variables for another run  --
   (&c)->~NodeContainer();
   new (&c) NodeContainer();
+  resetTracingVars();   // Prepare for next TCP version simulation
 
   return 1;
 }
@@ -142,6 +148,7 @@ main (int argc, char *argv[])
   //  Actual Script Running Section
 
   run("Bbr");
-  run("Vegas");
   run("NewReno");
+  run("Vegas");
+
 }

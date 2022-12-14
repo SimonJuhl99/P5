@@ -10,12 +10,19 @@ static std::map<uint32_t, Ptr<OutputStreamWrapper>> rttStream;
 // Timeout Variables
 static std::map<uint32_t, bool> firstRto;
 static std::map<uint32_t, Ptr<OutputStreamWrapper>> rtoStream;
+// Throughput Variables
 uint32_t prevTx = 0;    // Earlier values for throughput tracing
 uint32_t prevRx = 0;    // Earlier values for throughput tracing
 Time prevTxTime = Seconds (0);    // Earlier timestamps for throughput tracing
 Time prevRxTime = Seconds (0);    // Earlier timestamps for throughput tracing
+FlowMonitorHelper flowmon;    // Not used before network setup
+Ptr<FlowMonitor> monitor;     // Not used before network setup
 
-AsciiTraceHelper ascii;
+// Trace EVERYTHING variable
+AsciiTraceHelper ascii;       // Not used before network setup
+
+FlowMonitor::FlowStatsContainer stats;
+
 
 static uint32_t
 GetNodeIdFromContext (string context)
@@ -73,29 +80,6 @@ TraceRtt (string rtt_tr_file_name, uint32_t nodeId)
                    MakeCallback (&RttTracer));
 }
 
-static void
-TraceThroughput (string tp_tr_file_name, Ptr<FlowMonitor> monitor)
-{
-  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
-  // pointer to first value in stats
-  auto itr = stats.begin ();
-  // current time
-  Time curTime = Now ();
-  // ofstream is an output stream class to operate on files
-  // bitwise 'or' on either allowing output or appending to a stream
-  std::ofstream thr (tp_tr_file_name, std::ios::out | std::ios::app);
-  // write to stream:
-  // current time and
-  // transmitted bytes since last transmission divided by
-  // the time since last transmission
-  // which equals throughput (transmitted data over time)
-  thr <<  curTime << " " << 8 * (itr->second.txBytes - prevTx) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
-  // current time and current transmitted bytes which for next iteration becomes 'previous'
-  prevTxTime = curTime;
-  prevTx = itr->second.txBytes;
-  // recursive call every x seconds
-  Simulator::Schedule (Seconds (0.5), &TraceThroughput, tp_tr_file_name, monitor);
-}
 
 //////////////////////////////////////////////////////////////////////
 //  --  Skriv de 2 herunder sammen til én samlet, i den ovenover  -- 
@@ -104,7 +88,8 @@ TraceThroughput (string tp_tr_file_name, Ptr<FlowMonitor> monitor)
 static void
 TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
 {
-  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
+  // FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
+  stats = monitor->GetFlowStats ();
   // pointer to first value in stats
   auto itr = stats.begin ();
   // current time
@@ -117,11 +102,21 @@ TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   // transmitted bytes since last transmission divided by
   // the time since last transmission
   // which equals throughput (transmitted data over time)
-  thr <<  curTime << " " << 8 * (itr->second.txBytes - prevTx) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
+
+
+  NS_LOG_INFO ("Previous TX; " + std::to_string(prevTx));
+  NS_LOG_INFO ("Combined TX: " + std::to_string(itr->second.txBytes));
+  int current = itr->second.txBytes - prevTx;
+  NS_LOG_INFO ("Current TX: " + std::to_string(current) + "\n");
+
+
+  thr <<  curTime << " " << 8 * (current) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
   // current time and current transmitted bytes which for next iteration becomes 'previous'
   prevTxTime = curTime;
   prevTx = itr->second.txBytes;
   // recursive call every x seconds
+
+  // Simulator::Schedule (Seconds (throughputTraceInterval), &TraceTxThroughput, tp_tr_file_name, monitor);
   Simulator::Schedule (Seconds (0.5), &TraceTxThroughput, tp_tr_file_name, monitor);
 }
 
@@ -129,7 +124,8 @@ TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
 static void
 TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
 {
-  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
+  // FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
+  stats = monitor->GetFlowStats ();
   // pointer to first value in stats
   auto itr = stats.begin ();
   // current time
@@ -150,5 +146,36 @@ TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   prevRxTime = curTime;
   prevRx = itr->second.rxBytes;
   // recursive call every x seconds
+
+  // Simulator::Schedule (Seconds (throughputTraceInterval), &TraceRxThroughput, tp_tr_file_name, monitor);
   Simulator::Schedule (Seconds (0.5), &TraceRxThroughput, tp_tr_file_name, monitor);
+}
+
+
+int emptyTraceFiles(string tcp_version)
+{
+  std::ofstream rtt (tcp_version + "-rtt.data", std::ios::out);
+  std::ofstream cwnd (tcp_version + "-cwnd.data", std::ios::out);
+  std::ofstream in (tcp_version + "-rx-throughput.data", std::ios::out);
+  std::ofstream out (tcp_version + "-tx-throughput.data", std::ios::out);
+  rtt <<  "";
+  cwnd <<  "";
+  in <<  "";
+  out <<  "";
+
+  return 1;
+}
+
+int resetTracingVars()
+{
+   stats = monitor->GetFlowStats ();   // Pull out current package stats
+  auto itr = stats.begin ();
+
+  //  NS-3 doesn't reset these variables, so set to the final state
+  prevTx = itr->second.txBytes;
+  prevRx = itr->second.rxBytes;
+  prevTxTime = Now ();
+  prevRxTime = Now ();
+
+  return 1;
 }

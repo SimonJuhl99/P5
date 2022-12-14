@@ -165,8 +165,8 @@ main (int argc, char *argv[])
   Time simulationEndTime = Seconds (80);
   DataRate bottleneckBandwidth ("1Mbps");
   Time bottleneckDelay = MilliSeconds (5);
-  DataRate regLinkBandwidth = DataRate (1 * bottleneckBandwidth.GetBitRate ());
-  Time regLinkDelay = MilliSeconds (5);
+  DataRate defaultDatarate = DataRate (1 * bottleneckBandwidth.GetBitRate ());
+  Time defaultLinkDelay = MilliSeconds (5);
 
   //Config::SetDefault ("ns3::BulkSendApplication::SendSize", UintegerValue (100000));
   //Config::SetDefault ("ns3::BulkSendApplication::DataRate", StringValue ("448kb/s"));
@@ -210,8 +210,8 @@ main (int argc, char *argv[])
   NS_LOG_INFO ("Create channels.");
   PointToPointHelper p2p;
 
-  p2p.SetDeviceAttribute ("DataRate", DataRateValue (regLinkBandwidth));
-  p2p.SetChannelAttribute ("Delay", TimeValue (regLinkDelay));
+  p2p.SetDeviceAttribute ("DataRate", DataRateValue (defaultDatarate));
+  p2p.SetChannelAttribute ("Delay", TimeValue (defaultLinkDelay));
   NetDeviceContainer d0d1 = p2p.Install (n0n1);
 
   NetDeviceContainer d1d2 = p2p.Install (n1n2);
@@ -220,8 +220,8 @@ main (int argc, char *argv[])
   p2p.SetChannelAttribute ("Delay", TimeValue (bottleneckDelay));
   NetDeviceContainer d2d3 = p2p.Install (n2n3);
 
-  p2p.SetDeviceAttribute ("DataRate", DataRateValue (regLinkBandwidth));
-  p2p.SetChannelAttribute ("Delay", TimeValue (regLinkDelay));
+  p2p.SetDeviceAttribute ("DataRate", DataRateValue (defaultDatarate));
+  p2p.SetChannelAttribute ("Delay", TimeValue (defaultLinkDelay));
   NetDeviceContainer d3d4 = p2p.Install (n3n4);
 
   NetDeviceContainer d1d5 = p2p.Install (n1n5);

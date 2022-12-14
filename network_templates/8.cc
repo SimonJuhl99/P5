@@ -24,7 +24,7 @@
 
 
 
-//    ERSTAT ALLE "i1i2" og andre tal, med "node_interface[1]".... 
+//    ERSTAT ALLE "i1i2" og andre tal, med "link_interface[1]".... 
 //    OBS!!!  Tilsvarende tal er ikke nødvendigvis det første i rækken...
 
 
@@ -42,8 +42,8 @@ NodeContainer n6n7;
 
 PointToPointHelper p2p;
 
-NetDeviceContainer device_container[8];
-Ipv4InterfaceContainer node_interface[8];
+NetDeviceContainer link_container[8];
+Ipv4InterfaceContainer link_interface[8];
 
 Ptr<ConstantPositionMobilityModel> mn0;
 Ptr<ConstantPositionMobilityModel> mn1;
@@ -54,15 +54,23 @@ Ptr<ConstantPositionMobilityModel> mn5;
 Ptr<ConstantPositionMobilityModel> mn6;
 Ptr<ConstantPositionMobilityModel> mn7;
 
-// AsciiTraceHelper ascii;
-FlowMonitorHelper flowmon;
-// Ptr<FlowMonitor> monitor = flowmon.InstallAll ();
-Ptr<FlowMonitor> monitor;
+//  ----------------------------------------------
+//  --  Setup of Source & Sink Variables  --
+// Maximum Source Datarate Setup
+uint32_t maxBytes = 0;      // 0 means "no limit"
+
+Address sinkAddress;
+
+// // AsciiTraceHelper ascii;
+// FlowMonitorHelper flowmon;
+// // Ptr<FlowMonitor> monitor = flowmon.InstallAll ();
+// Ptr<FlowMonitor> monitor;
 
 
-// DataRate regLinkBandwidth = DataRate (4 * bottleneckBandwidth.GetBitRate ());
-DataRate regLinkBandwidth("8Mbps");
-Time regLinkDelay = MilliSeconds (5);
+// DataRate defaultDatarate = DataRate (4 * bottleneckBandwidth.GetBitRate ());
+// DataRate defaultDatarate("8Mbps");
+// Time defaultLinkDelay = MilliSeconds (5);
+
 
 
 AnimationInterface    // Need to be the XML tracing object, for it to work.
@@ -108,18 +116,18 @@ build_network (string tcp_version)
   // We create the channels first without any IP addressing information
   NS_LOG_INFO ("Creating channels.");
 
-  p2p.SetDeviceAttribute ("DataRate", DataRateValue (regLinkBandwidth));
-  p2p.SetChannelAttribute ("Delay", TimeValue (regLinkDelay));
+  p2p.SetDeviceAttribute ("DataRate", DataRateValue (defaultDatarate));
+  p2p.SetChannelAttribute ("Delay", TimeValue (defaultLinkDelay));
 
   // Setup the connection between a net-devices in each end
-  device_container[0] = p2p.Install (n0n2);
-  device_container[1] = p2p.Install (n1n2);
-  device_container[2] = p2p.Install (n2n3);   // Gammel d0d1
-  device_container[3] = p2p.Install (n3n4);   // Gammel d1d5
-  device_container[4] = p2p.Install (n3n5);   // Gammel d1d2
-  device_container[5] = p2p.Install (n4n6);   // Gammel d5d3
-  device_container[6] = p2p.Install (n5n6);   // Gammel d2d3
-  device_container[7] = p2p.Install (n6n7);   // Gammel d3d4
+  link_container[0] = p2p.Install (n0n2);
+  link_container[1] = p2p.Install (n1n2);
+  link_container[2] = p2p.Install (n2n3);   // Gammel d0d1
+  link_container[3] = p2p.Install (n3n4);   // Gammel d1d5
+  link_container[4] = p2p.Install (n3n5);   // Gammel d1d2
+  link_container[5] = p2p.Install (n4n6);   // Gammel d5d3
+  link_container[6] = p2p.Install (n5n6);   // Gammel d2d3
+  link_container[7] = p2p.Install (n6n7);   // Gammel d3d4
 
   //      OBS   OBS   OBS   OBS   OBS
   // --  Stadig ikke sikker på at "Bottleneck'en" bliver opdateret fra run()
@@ -127,7 +135,7 @@ build_network (string tcp_version)
 
   // p2p.SetDeviceAttribute ("DataRate", DataRateValue (bottleneckBandwidth));
   // p2p.SetChannelAttribute ("Delay", TimeValue (bottleneckDelay));
-  // device_container[6] = p2p.Install (n5n6);   // Gammel d2d3
+  // link_container[6] = p2p.Install (n5n6);   // Gammel d2d3
 
 
 
@@ -140,28 +148,28 @@ build_network (string tcp_version)
   Ipv4AddressHelper ipv4;
 
   ipv4.SetBase ("10.1.1.0", "255.255.255.0");
-  node_interface[0] = ipv4.Assign (device_container[0]);
+  link_interface[0] = ipv4.Assign (link_container[0]);
 
   ipv4.SetBase ("10.1.2.0", "255.255.255.0");
-  node_interface[1] = ipv4.Assign (device_container[1]);
+  link_interface[1] = ipv4.Assign (link_container[1]);
 
   ipv4.SetBase ("10.1.3.0", "255.255.255.0");
-  node_interface[2] = ipv4.Assign (device_container[2]);
+  link_interface[2] = ipv4.Assign (link_container[2]);
 
   ipv4.SetBase ("10.1.4.0", "255.255.255.0");
-  node_interface[3] = ipv4.Assign (device_container[3]);
+  link_interface[3] = ipv4.Assign (link_container[3]);
 
   ipv4.SetBase ("10.1.5.0", "255.255.255.0");
-  node_interface[4] = ipv4.Assign (device_container[4]);
+  link_interface[4] = ipv4.Assign (link_container[4]);
 
   ipv4.SetBase ("10.1.6.0", "255.255.255.0");
-  node_interface[5] = ipv4.Assign (device_container[5]);
+  link_interface[5] = ipv4.Assign (link_container[5]);
 
   ipv4.SetBase ("10.1.7.0", "255.255.255.0");
-  node_interface[6] = ipv4.Assign (device_container[6]);
+  link_interface[6] = ipv4.Assign (link_container[6]);
 
   ipv4.SetBase ("10.1.8.0", "255.255.255.0");
-  node_interface[7] = ipv4.Assign (device_container[7]);
+  link_interface[7] = ipv4.Assign (link_container[7]);
 
   NS_LOG_INFO ("IP's and interfaces assigned.");
 
