@@ -1,7 +1,4 @@
 Address sinkAddress;
-// BulkSendHelper source;
-// FlowMonitorHelper flowmon;
-// Ptr<FlowMonitor> monitor;
 
 
 

@@ -1,10 +1,15 @@
-// Old tracing
-// uint32_t prev = 0;
-// Time prevTime = Seconds (0);
+// Tracing Variables
 
-
-// Tracing
-
+// Congestion Window Variables
+static std::map<uint32_t, bool> firstCwnd;
+static std::map<uint32_t, Ptr<OutputStreamWrapper>> cWndStream;
+static std::map<uint32_t, uint32_t> cWndValue;
+// Roundtrip Time Variables
+static std::map<uint32_t, bool> firstRtt;
+static std::map<uint32_t, Ptr<OutputStreamWrapper>> rttStream;
+// Timeout Variables
+static std::map<uint32_t, bool> firstRto;
+static std::map<uint32_t, Ptr<OutputStreamWrapper>> rtoStream;
 uint32_t prevTx = 0;    // Earlier values for throughput tracing
 uint32_t prevRx = 0;    // Earlier values for throughput tracing
 Time prevTxTime = Seconds (0);    // Earlier timestamps for throughput tracing

@@ -55,7 +55,7 @@ run (string tcp_version)
   //  ---------------------------------------
   //  --  Simulation Rerouting Scheduling  -- 
 
-  float reroute_time = start_time + 6.01;
+  float reroute_time = start_time + 6.02;
 
   // SetDown & SetUp opens and closes that specific connection.
   Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n3ipv4, n3_to_n4_index);
