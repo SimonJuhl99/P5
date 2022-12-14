@@ -14,12 +14,17 @@
 //   }
 // }
 
+Address sinkAddress;
+ApplicationContainer sinkApp; 
+ApplicationContainer sourceApp;
+
 
 Address createSink(int node, string tcp_version, int port = 8080)
 {
   Address newSinkAddress ( InetSocketAddress ( link_interface[node].GetAddress(1), port ) );     // setup sink interface on node 7
   PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress ( Ipv4Address::GetAny (), port ) );
-  ApplicationContainer sinkApp = packetSinkHelper.Install( c.Get (7) );   // Install sink application on node 7
+  sinkApp = packetSinkHelper.Install( c.Get (7) );   // Install sink application on node 7
+  // ApplicationContainer sinkApp = packetSinkHelper.Install( c.Get (7) );   // Install sink application on node 7
 
   // sinkApp.Start ( Seconds ( start_time ) );
   sinkApp.Start ( Seconds ( 0 ) );
@@ -28,21 +33,25 @@ Address createSink(int node, string tcp_version, int port = 8080)
   return newSinkAddress;
 }
 
-BulkSendHelper createSource(int node, string tcp_version, Address sink = sinkAddress, int datarate = maxBytes)
+BulkSendHelper createSource(int node, string tcp_version, Address sink, int datarate = maxBytes)
 {
-  BulkSendHelper newSource ("ns3::TcpSocketFactory", sinkAddress);
+  BulkSendHelper newSource ("ns3::TcpSocketFactory", sink);
   newSource.SetAttribute ("MaxBytes", UintegerValue (datarate));
-  ApplicationContainer sourceApp = newSource.Install ( c.Get (node) );
+  sourceApp = newSource.Install ( c.Get (node) );
+  // ApplicationContainer sourceApp = newSource.Install ( c.Get (node) );
 
 
-  sourceApp.Start ( Seconds ( start_time ) );
+  sourceApp.Start ( Seconds ( source_start_time ) );
+  // sourceApp.Start ( Seconds ( start_time ) );
   sourceApp.Stop ( simulationEndTime );
 
 
   // Setup tracing for RTT, Congestion Window and Transmitted Data
-  Simulator::Schedule (Seconds (start_time + 0.00001), &TraceCwnd,
+  // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceCwnd,
+  Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceCwnd,
                        tcp_version + "-cwnd.data", node);
-  Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRtt,
+  // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRtt,
+  Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceRtt,
                        tcp_version + "-rtt.data", node);
 
   return newSource;
@@ -50,21 +59,36 @@ BulkSendHelper createSource(int node, string tcp_version, Address sink = sinkAdd
 
 int setupThroughputTracing(string tcp_version)
 {
-  Simulator::Schedule (Seconds (start_time + 0.00001), &TraceTxThroughput,
+  monitor = flowmon.InstallAll ();
+  // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceTxThroughput,
+  Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceTxThroughput,
                        tcp_version + "-tx-throughput.data", monitor);
-  Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRxThroughput,
+  // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRxThroughput,
+  Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceRxThroughput,
                        tcp_version + "-rx-throughput.data", monitor);
 
   return 1;
 }
 
 
-int setupDefaultNodeTraffic(string tcp_version)
+
+
+
+auto setupDefaultNodeTraffic(string tcp_version)
+// int setupDefaultNodeTraffic(string tcp_version)
 {
   emptyTraceFiles(tcp_version);
-  sinkAddress = createSink(7, tcp_version);
-  BulkSendHelper source = createSource(0, tcp_version);
+  Address sinkAddress = createSink(7, tcp_version);
+  // BulkSendHelper source = createSource(0, tcp_version);
+  BulkSendHelper source = createSource(0, tcp_version, sinkAddress);
   setupThroughputTracing(tcp_version);
 
-  return 1;
+struct retVals {        // Declare a local structure 
+    BulkSendHelper src;
+    Address add;
+  };
+
+  // return 1;
+  return retVals {source, sinkAddress};
+  // return {source, sinkAddress};
 }

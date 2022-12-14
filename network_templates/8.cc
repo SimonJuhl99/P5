@@ -59,7 +59,7 @@ Ptr<ConstantPositionMobilityModel> mn7;
 // Maximum Source Datarate Setup
 uint32_t maxBytes = 0;      // 0 means "no limit"
 
-Address sinkAddress;
+// Address sinkAddress;
 
 // // AsciiTraceHelper ascii;
 // FlowMonitorHelper flowmon;
@@ -80,7 +80,7 @@ build_network (string tcp_version)
 
 
   // Source Setup
-  Config::SetDefault ("ns3::BulkSendApplication::SendSize", UintegerValue (100000));    // Change the packetsize of a source application
+  // Config::SetDefault ("ns3::BulkSendApplication::SendSize", UintegerValue (100000));    // Change the packetsize of a source application
   //Config::SetDefault ("ns3::BulkSendApplication::DataRate", StringValue ("448kb/s"));    // Change the datarate of source applications
 
 
@@ -210,11 +210,11 @@ build_network (string tcp_version)
 
 
  // Tracing Ascii Data Setup, tracing every single thing happening in the network
-  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ( tcp_version + ".tr" );
-  p2p.EnableAsciiAll ( stream );
+  // Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ( tcp_version + ".tr" );
+  // p2p.EnableAsciiAll ( stream );
   // p2p.EnablePcapAll ( tcp_version );
 
-  monitor = flowmon.InstallAll ();
+  // monitor = flowmon.InstallAll ();
 
 
   return anim;

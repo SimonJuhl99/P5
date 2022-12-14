@@ -162,7 +162,7 @@ main (int argc, char *argv[])
   std::string transportProtocol = "ns3::TcpNewReno";
   std::string prefix_file_name = "two-routes";
 
-  Time simulationEndTime = Seconds (50);
+  Time simulationEndTime = Seconds (20);
   DataRate bottleneckBandwidth ("8Mbps");
   Time bottleneckDelay = MilliSeconds (5);
   DataRate defaultDatarate = DataRate (1 * bottleneckBandwidth.GetBitRate ());

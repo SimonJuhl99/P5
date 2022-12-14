@@ -16,7 +16,12 @@ run (string tcp_version)
   //  --  DON'T TOUCH THIS!  --
   */
   AnimationInterface anim = build_network(tcp_version);   // Network Setup
-  setupDefaultNodeTraffic(tcp_version);   // Creating Default Sink & Source
+  auto [source, sinkAddress] = setupDefaultNodeTraffic(tcp_version);   // Creating Default Sink & Source
+
+
+
+
+
 
 
 
@@ -46,8 +51,8 @@ run (string tcp_version)
   Ptr<Node> n3 = c.Get (3);   // Grap third node (before forking)
   Ptr<Ipv4> n3ipv4 = n3->GetObject<Ipv4> ();
   // The first interfaceIndex is 0 for loopback, then the first p2p connection is numbered 1, numbered by order of creation.
-  uint32_t n3_to_n4_index = 2;    // Connection index between node 3 & 4
-  // uint32_t n3_to_n5_index = 3;    // Connection index between node 3 & 5
+  uint32_t n3_to_n4_connection = 2;    // Connection index between node 3 & 4
+  uint32_t n3_to_n5_connection = 3;    // Connection index between node 3 & 5
 
 
 
@@ -55,25 +60,30 @@ run (string tcp_version)
   //  ---------------------------------------
   //  --  Simulation Rerouting Scheduling  --
 
-  float reroute_time = start_time + 6.027;
+  float first_reroute_time = start_time + 6.027;
+  float second_reroute_time = start_time + 15.027;
 
   // SetDown & SetUp opens and closes that specific connection.
-  Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n3ipv4, n3_to_n4_index);
-  Simulator::Schedule (Seconds (reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n4_index);
-  // Simulator::Schedule (Seconds (reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_index);
-  // Simulator::Schedule (Seconds (reroute_time), &ActivateError, link_container[4].Get (1), true);
+  Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n3ipv4, n3_to_n4_connection);
+  Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n4_connection);
+  Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
+
+  // Rorouting again
+  Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n5_connection);
+  Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
 
 
 
+  // Simulator::Schedule (Seconds (first_reroute_time), &ActivateError, link_container[4].Get (1), true);
 
   // Simulator::Schedule (Seconds (start_time + 6), &ActivateError, link_container[4].Get (1), false);
-  // Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetUp, n3ipv4, n3_to_n5_index);
-  // Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetDown, n3ipv4, n3_to_n3_index);
+  // Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetUp, n3ipv4, n3_to_n5_connection);
+  // Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetDown, n3ipv4, n3_to_n3_connection);
   // Simulator::Schedule (Seconds (start_time + 6), &ActivateError, link_container[3].Get (1), true);
 
   // Simulator::Schedule (Seconds (start_time + 9), &ActivateError, link_container[3].Get (1), false);
-  // Simulator::Schedule (Seconds (start_time + 9), &Ipv4::SetUp, n3ipv4, n3_to_n4_index);
-  // Simulator::Schedule (Seconds (start_time + 9), &Ipv4::SetDown, n3ipv4, n3_to_n5_index);
+  // Simulator::Schedule (Seconds (start_time + 9), &Ipv4::SetUp, n3ipv4, n3_to_n4_connection);
+  // Simulator::Schedule (Seconds (start_time + 9), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
   // Simulator::Schedule (Seconds (start_time + 9), &ActivateError, link_container[4].Get (1), true);
 
 
@@ -149,10 +159,6 @@ main (int argc, char *argv[])
 
   run("Bbr");
   run("NewReno");
-<<<<<<< HEAD
-}
-=======
   run("Vegas");
 
 }
->>>>>>> e1fea9f22d8a720725c68b1413b8e8e6117423e7
