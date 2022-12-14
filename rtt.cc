@@ -76,10 +76,12 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("two_routes");
+NS_LOG_COMPONENT_DEFINE ("rtt");
 
-uint32_t prev = 0;
-Time prevTime = Seconds (0);
+uint32_t prevTx = 0;
+uint32_t prevRx = 0;
+Time prevTxTime = Seconds (0);
+Time prevRxTime = Seconds (0);
 
 static std::map<uint32_t, bool> firstCwnd;
 static std::map<uint32_t, bool> firstRtt;
@@ -95,21 +97,21 @@ GetNodeIdFromContext (std::string context)
   return std::stoul (context.substr (n1 + 1, n2 - n1 - 1));
 }
 
-static void
-ActivateError(Ptr<NetDevice> d, bool activate)
-{
-  Ptr<RateErrorModel> errorFree = CreateObject<RateErrorModel> ();
-  Ptr<RateErrorModel> error = CreateObject<RateErrorModel> ();
-  // an error rate of 1 means that error percentage is 100%
-  errorFree->SetAttribute ("ErrorRate", DoubleValue (0));
-  error->SetAttribute ("ErrorRate", DoubleValue (1));
-  // if activate is true set error percentage to 100%
-  if (activate) {
-    d->SetAttribute ("ReceiveErrorModel", PointerValue (error));
-  } else {
-    d->SetAttribute ("ReceiveErrorModel", PointerValue (errorFree));
-  }
-}
+// static void
+// ActivateError(Ptr<NetDevice> d, bool activate)
+// {
+//   Ptr<RateErrorModel> errorFree = CreateObject<RateErrorModel> ();
+//   Ptr<RateErrorModel> error = CreateObject<RateErrorModel> ();
+//   // an error rate of 1 means that error percentage is 100%
+//   errorFree->SetAttribute ("ErrorRate", DoubleValue (0));
+//   error->SetAttribute ("ErrorRate", DoubleValue (1));
+//   // if activate is true set error percentage to 100%
+//   if (activate) {
+//     d->SetAttribute ("ReceiveErrorModel", PointerValue (error));
+//   } else {
+//     d->SetAttribute ("ReceiveErrorModel", PointerValue (errorFree));
+//   }
+// }
 
 static void
 CwndTracer (std::string context,  uint32_t oldval, uint32_t newval)
@@ -174,12 +176,12 @@ TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   // transmitted bytes since last transmission divided by
   // the time since last transmission
   // which equals throughput (transmitted data over time)
-  thr <<  curTime << " " << 8 * (itr->second.txBytes - prev) / (1000 * 1000 * (curTime.GetSeconds () - prevTime.GetSeconds ())) << std::endl;
+  thr <<  curTime << " " << 8 * (itr->second.txBytes - prevTx) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
   // current time and current transmitted bytes which for next iteration becomes 'previous'
-  prevTime = curTime;
-  prev = itr->second.txBytes;
+  prevTxTime = curTime;
+  prevTx = itr->second.txBytes;
   // recursive call every x seconds
-  Simulator::Schedule (Seconds (0.05), &TraceTxThroughput, tp_tr_file_name, monitor);
+  Simulator::Schedule (Seconds (0.5), &TraceTxThroughput, tp_tr_file_name, monitor);
 }
 
 static void
@@ -198,12 +200,15 @@ TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   // transmitted bytes since last transmission divided by
   // the time since last transmission
   // which equals throughput (transmitted data over time)
-  thr <<  curTime << " " << 8 * (itr->second.rxBytes - prev) / (1000 * 1000 * (curTime.GetSeconds () - prevTime.GetSeconds ())) << std::endl;
+  thr <<  curTime << " " << 8 * (itr->second.rxBytes - prevRx) / (1000 * 1000 * (curTime.GetSeconds () - prevRxTime.GetSeconds ())) << std::endl;
+
+  // thr <<  curTime << " " << itr->second.rxBytes << " " << prev  << std::endl;
+  //<< i->second.rxBytes * 8.0 / simulationEndTime.GetSeconds () / 1000 / 1000  << " Mbps\n";
   // current time and current transmitted bytes which for next iteration becomes 'previous'
-  prevTime = curTime;
-  prev = itr->second.rxBytes;
+  prevRxTime = curTime;
+  prevRx = itr->second.rxBytes;
   // recursive call every x seconds
-  Simulator::Schedule (Seconds (0.05), &TraceRxThroughput, tp_tr_file_name, monitor);
+  Simulator::Schedule (Seconds (0.5), &TraceRxThroughput, tp_tr_file_name, monitor);
 }
 
 int
@@ -214,7 +219,8 @@ main (int argc, char *argv[])
   std::string transportProtocol = "ns3::TcpNewReno";
   std::string prefix_file_name = "rtt";
 
-  Time simulationEndTime = Seconds (12);
+  uint32_t intSimulationEndTime = 20;
+  Time simulationEndTime = Seconds (intSimulationEndTime);
   DataRate linkBandwidth ("1Mbps");
   Time linkDelay = MilliSeconds (5);
 
@@ -224,7 +230,7 @@ main (int argc, char *argv[])
   Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (transportProtocol)));
   Config::SetDefault ("ns3::TcpSocket::InitialCwnd", UintegerValue (10));
 
-  //LogComponentEnable("rtt", LOG_LEVEL_ALL);
+  LogComponentEnable("rtt", LOG_LEVEL_ALL);
 
   CommandLine cmd (__FILE__);
   // cmd.AddValue ("transport_prot", "Transport protocol to use: TcpNewReno, TcpLinuxReno, "
@@ -296,6 +302,39 @@ main (int argc, char *argv[])
   p2p.EnableAsciiAll (stream);
   p2p.EnablePcapAll ("rtt");
 
+
+  Simulator::Schedule (Seconds (start_time + 0.00001), &TraceCwnd,
+                       prefix_file_name + "-cwnd.data", 0);
+  // Setup tracing for RTT
+  Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRtt,
+                       prefix_file_name + "-rtt.data", 0);
+
+  // Setup FlowMonitor and tracing for throughput
+  FlowMonitorHelper flowmon;
+  Ptr<FlowMonitor> monitor = flowmon.InstallAll ();
+  Simulator::Schedule (Seconds (start_time + 0.00001), &TraceTxThroughput,
+                       prefix_file_name + "-tx-throughput.data", monitor);
+  Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRxThroughput,
+                       prefix_file_name + "-rx-throughput.data", monitor);
+
+
+  std::string mystring;
+  std::ifstream myfile;
+  myfile.open("oppo.data");
+
+  if ( myfile.is_open() ) { // always check whether the file is open
+    NS_LOG_INFO("pls");
+    myfile >> mystring; // pipe file's content into stream
+    std::cout << mystring; // pipe stream's content to standard output
+  }
+
+  // while (getline (MyReadFile, myText)) {
+  //   NS_LOG_INFO(myText);
+  // }
+
+  // for (int i = 0; i < intSimulationEndTime; i++) {
+  //   NS_LOG_INFO (i);
+  // }
 
 
   NS_LOG_INFO ("Run Simulation.");

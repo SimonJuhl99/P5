@@ -162,8 +162,8 @@ main (int argc, char *argv[])
   std::string transportProtocol = "ns3::TcpNewReno";
   std::string prefix_file_name = "two-routes";
 
-  Time simulationEndTime = Seconds (80);
-  DataRate bottleneckBandwidth ("1Mbps");
+  Time simulationEndTime = Seconds (50);
+  DataRate bottleneckBandwidth ("8Mbps");
   Time bottleneckDelay = MilliSeconds (5);
   DataRate regLinkBandwidth = DataRate (1 * bottleneckBandwidth.GetBitRate ());
   Time regLinkDelay = MilliSeconds (5);
@@ -332,9 +332,10 @@ main (int argc, char *argv[])
 
   Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex3);
 
-  Simulator::Schedule (Seconds (start_time + 70), &Ipv4::SetUp, n1ipv4, n1ipv4ifIndex3);
-  Simulator::Schedule (Seconds (start_time + 70), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex2);
-  Simulator::Schedule (Seconds (start_time + 70), &ActivateError, d1d2.Get (1), true);
+  Simulator::Schedule (Seconds (start_time + 2000), &Ipv4::SetUp, n1ipv4, n1ipv4ifIndex3);
+  Simulator::Schedule (Seconds (start_time + 2000), &Ipv4::SetDown, n1ipv4, n1ipv4ifIndex2);
+  Simulator::Schedule (Seconds (start_time + 2000), &ActivateError, d1d2.Get (0), true);
+  Simulator::Schedule (Seconds (start_time + 2000), &ActivateError, d1d2.Get (1), true);
 
   // Simulator::Schedule (Seconds (start_time + 6), &ActivateError, d1d2.Get (1), false);
   // Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetUp, n1ipv4, n1ipv4ifIndex2);

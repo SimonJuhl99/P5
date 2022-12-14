@@ -23,7 +23,7 @@ run (string tcp_version)
   /* --------------------------------------------------------
   //  --  Write Specific Scenario Script Under This  --
   //  --  START FROM HERE!  --
-  */ 
+  */
 
 
   // Create bottleneck in one of the links
@@ -53,7 +53,7 @@ run (string tcp_version)
 
 
   //  ---------------------------------------
-  //  --  Simulation Rerouting Scheduling  -- 
+  //  --  Simulation Rerouting Scheduling  --
 
   float reroute_time = start_time + 6.01;
 
@@ -78,7 +78,7 @@ run (string tcp_version)
 
 
 
-  /* 
+  /*
   //  --  STOP HERE!  --
   //  --  Write Specific Scenario Script Above This  --
    --------------------------------------------------------*/
