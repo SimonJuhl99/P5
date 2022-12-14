@@ -163,7 +163,7 @@ main (int argc, char *argv[])
   std::string prefix_file_name = "two-routes";
 
   Time simulationEndTime = Seconds (50);
-  DataRate bottleneckBandwidth ("8Mbps");
+  DataRate bottleneckBandwidth ("1Mbps");
   Time bottleneckDelay = MilliSeconds (5);
   DataRate defaultDatarate = DataRate (1 * bottleneckBandwidth.GetBitRate ());
   Time defaultLinkDelay = MilliSeconds (5);

@@ -58,11 +58,13 @@
 //  NS-3 need "functioning code" for parser-files to be recognized
 ///////////
 
-
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <cassert>
+#include <vector>
+#include <sstream>
+#include <cstddef>
+#include <array>
 
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
@@ -76,12 +78,10 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("rtt");
+NS_LOG_COMPONENT_DEFINE ("two_routes");
 
-uint32_t prevTx = 0;
-uint32_t prevRx = 0;
-Time prevTxTime = Seconds (0);
-Time prevRxTime = Seconds (0);
+uint32_t prev = 0;
+Time prevTime = Seconds (0);
 
 static std::map<uint32_t, bool> firstCwnd;
 static std::map<uint32_t, bool> firstRtt;
@@ -176,12 +176,12 @@ TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   // transmitted bytes since last transmission divided by
   // the time since last transmission
   // which equals throughput (transmitted data over time)
-  thr <<  curTime << " " << 8 * (itr->second.txBytes - prevTx) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
+  thr <<  curTime << " " << 8 * (itr->second.txBytes - prev) / (1000 * 1000 * (curTime.GetSeconds () - prevTime.GetSeconds ())) << std::endl;
   // current time and current transmitted bytes which for next iteration becomes 'previous'
-  prevTxTime = curTime;
-  prevTx = itr->second.txBytes;
+  prevTime = curTime;
+  prev = itr->second.txBytes;
   // recursive call every x seconds
-  Simulator::Schedule (Seconds (0.5), &TraceTxThroughput, tp_tr_file_name, monitor);
+  Simulator::Schedule (Seconds (0.05), &TraceTxThroughput, tp_tr_file_name, monitor);
 }
 
 static void
@@ -200,15 +200,35 @@ TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   // transmitted bytes since last transmission divided by
   // the time since last transmission
   // which equals throughput (transmitted data over time)
-  thr <<  curTime << " " << 8 * (itr->second.rxBytes - prevRx) / (1000 * 1000 * (curTime.GetSeconds () - prevRxTime.GetSeconds ())) << std::endl;
-
-  // thr <<  curTime << " " << itr->second.rxBytes << " " << prev  << std::endl;
-  //<< i->second.rxBytes * 8.0 / simulationEndTime.GetSeconds () / 1000 / 1000  << " Mbps\n";
+  thr <<  curTime << " " << 8 * (itr->second.rxBytes - prev) / (1000 * 1000 * (curTime.GetSeconds () - prevTime.GetSeconds ())) << std::endl;
   // current time and current transmitted bytes which for next iteration becomes 'previous'
-  prevRxTime = curTime;
-  prevRx = itr->second.rxBytes;
+  prevTime = curTime;
+  prev = itr->second.rxBytes;
   // recursive call every x seconds
-  Simulator::Schedule (Seconds (0.5), &TraceRxThroughput, tp_tr_file_name, monitor);
+  Simulator::Schedule (Seconds (0.05), &TraceRxThroughput, tp_tr_file_name, monitor);
+}
+
+size_t split(const std::string &txt, std::vector<std::string> &strs, char ch)
+{
+  size_t pos = txt.find( ch );
+  size_t initialPos = 0;
+  strs.clear();
+  // Decompose statement
+  while( pos != std::string::npos ) {
+    strs.push_back( txt.substr( initialPos, pos - initialPos ) );
+    initialPos = pos + 1;
+    pos = txt.find( ch, initialPos );
+  }
+  // Add the last one
+  strs.push_back( txt.substr( initialPos, std::min( pos, txt.size() ) - initialPos + 1 ) );
+  return strs.size();
+}
+
+void ChangeDataRate(Ptr<NetDeviceContainer> container, double dr)
+{
+  std::string dr_string = std::to_string(dr) + "Mbps";
+  container.Get(0)->SetAttribute ("DateRate", DataRate(dr_string));
+  container.Get(1)->SetAttribute ("DateRate", DataRate(dr_string));
 }
 
 int
@@ -219,7 +239,7 @@ main (int argc, char *argv[])
   std::string transportProtocol = "ns3::TcpNewReno";
   std::string prefix_file_name = "rtt";
 
-  uint32_t intSimulationEndTime = 20;
+  uint32_t intSimulationEndTime = 200;
   Time simulationEndTime = Seconds (intSimulationEndTime);
   DataRate linkBandwidth ("1Mbps");
   Time linkDelay = MilliSeconds (5);
@@ -230,7 +250,7 @@ main (int argc, char *argv[])
   Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (transportProtocol)));
   Config::SetDefault ("ns3::TcpSocket::InitialCwnd", UintegerValue (10));
 
-  LogComponentEnable("rtt", LOG_LEVEL_ALL);
+  //LogComponentEnable("rtt", LOG_LEVEL_ALL);
 
   CommandLine cmd (__FILE__);
   // cmd.AddValue ("transport_prot", "Transport protocol to use: TcpNewReno, TcpLinuxReno, "
@@ -317,24 +337,46 @@ main (int argc, char *argv[])
   Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRxThroughput,
                        prefix_file_name + "-rx-throughput.data", monitor);
 
+  int oppo_len = 772;
+  int parallel_len = 2901;
+
+  std::string oppo_arr[oppo_len + 1];
+  std::string parallel_arr[parallel_len + 1];
 
   std::string mystring;
-  std::ifstream myfile;
+  std::fstream myfile;
   myfile.open("oppo.data");
 
+  int i = 0;
+  std::vector<std::string> v;
+
   if ( myfile.is_open() ) { // always check whether the file is open
-    NS_LOG_INFO("pls");
-    myfile >> mystring; // pipe file's content into stream
-    std::cout << mystring; // pipe stream's content to standard output
+
+    while(!myfile.eof()) {
+      getline(myfile, mystring);
+      split(mystring, v, ' ');
+      //std::cout << v.at(1) << "\n";
+      if (v.size() > 1) {
+        oppo_arr[i]=v.at(1);
+      }
+      i++;
+    }
+    myfile.close();
+    // while (getline (myfile, mystring)) {
+    //   // Output the text from the file
+    //   std::cout << mystring + "\n";
+    // }
+
   }
 
-  // while (getline (MyReadFile, myText)) {
-  //   NS_LOG_INFO(myText);
-  // }
+  for(int i = 0; i < oppo_len ; i++) {
+    int int_converted_vals = std::stoi(oppo_arr[i]);
+    double megabits_per_sec = (double)int_converted_vals / (double)1000000;
+    double dummy_datarate = megabits_per_sec / 1000.0;
+    std::cout << dummy_datarate << "\n";//oppo_arr[i];
 
-  // for (int i = 0; i < intSimulationEndTime; i++) {
-  //   NS_LOG_INFO (i);
-  // }
+    Simulator::Schedule (Seconds (i), &ChangeDataRate, d, dummy_datarate);
+  }
 
 
   NS_LOG_INFO ("Run Simulation.");
