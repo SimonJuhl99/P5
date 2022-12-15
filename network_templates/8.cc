@@ -31,7 +31,6 @@
 //  ---------------------------------------
 //  --  Setup of Network Variables  --
 NodeContainer node;
-// NodeContainer c;
 NodeContainer n0n2;
 NodeContainer n1n2;
 NodeContainer n2n3;
@@ -219,7 +218,7 @@ build_network (string tcp_version, string error)
  // Tracing Ascii Data Setup, tracing every single thing happening in the network
   // Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ( tcp_version + error + ".tr" );
   // p2p.EnableAsciiAll ( stream );
-  p2p.EnablePcapAll ( tcp_version );
+  // p2p.EnablePcapAll ( tcp_version );
 
   // monitor = flowmon.InstallAll ();
 
