@@ -69,6 +69,7 @@
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/point-to-point-module.h"
+#include "ns3/point-to-point-net-device.h"
 #include "ns3/csma-module.h"
 #include "ns3/applications-module.h"
 #include "ns3/internet-module.h"
@@ -78,10 +79,12 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("two_routes");
+NS_LOG_COMPONENT_DEFINE ("rtt");
 
-uint32_t prev = 0;
-Time prevTime = Seconds (0);
+uint32_t prevTx = 0;
+uint32_t prevRx = 0;
+Time prevTxTime = Seconds (0);
+Time prevRxTime = Seconds (0);
 
 static std::map<uint32_t, bool> firstCwnd;
 static std::map<uint32_t, bool> firstRtt;
@@ -176,12 +179,12 @@ TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   // transmitted bytes since last transmission divided by
   // the time since last transmission
   // which equals throughput (transmitted data over time)
-  thr <<  curTime << " " << 8 * (itr->second.txBytes - prev) / (1000 * 1000 * (curTime.GetSeconds () - prevTime.GetSeconds ())) << std::endl;
+  thr <<  curTime << " " << 8 * (itr->second.txBytes - prevTx) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
   // current time and current transmitted bytes which for next iteration becomes 'previous'
-  prevTime = curTime;
-  prev = itr->second.txBytes;
+  prevTxTime = curTime;
+  prevTx = itr->second.txBytes;
   // recursive call every x seconds
-  Simulator::Schedule (Seconds (0.05), &TraceTxThroughput, tp_tr_file_name, monitor);
+  Simulator::Schedule (Seconds (0.5), &TraceTxThroughput, tp_tr_file_name, monitor);
 }
 
 static void
@@ -200,12 +203,15 @@ TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   // transmitted bytes since last transmission divided by
   // the time since last transmission
   // which equals throughput (transmitted data over time)
-  thr <<  curTime << " " << 8 * (itr->second.rxBytes - prev) / (1000 * 1000 * (curTime.GetSeconds () - prevTime.GetSeconds ())) << std::endl;
+  thr <<  curTime << " " << 8 * (itr->second.rxBytes - prevRx) / (1000 * 1000 * (curTime.GetSeconds () - prevRxTime.GetSeconds ())) << std::endl;
+
+  // thr <<  curTime << " " << itr->second.rxBytes << " " << prev  << std::endl;
+  //<< i->second.rxBytes * 8.0 / simulationEndTime.GetSeconds () / 1000 / 1000  << " Mbps\n";
   // current time and current transmitted bytes which for next iteration becomes 'previous'
-  prevTime = curTime;
-  prev = itr->second.rxBytes;
+  prevRxTime = curTime;
+  prevRx = itr->second.rxBytes;
   // recursive call every x seconds
-  Simulator::Schedule (Seconds (0.05), &TraceRxThroughput, tp_tr_file_name, monitor);
+  Simulator::Schedule (Seconds (0.5), &TraceRxThroughput, tp_tr_file_name, monitor);
 }
 
 size_t split(const std::string &txt, std::vector<std::string> &strs, char ch)
@@ -224,11 +230,63 @@ size_t split(const std::string &txt, std::vector<std::string> &strs, char ch)
   return strs.size();
 }
 
-void ChangeDataRate(Ptr<NetDeviceContainer> container, double dr)
+void ChangeDataRate(Ptr<PointToPointNetDevice> d0, Ptr<PointToPointNetDevice> d1, Ptr<PointToPointChannel> c, double dr)
 {
   std::string dr_string = std::to_string(dr) + "Mbps";
-  container.Get(0)->SetAttribute ("DateRate", DataRate(dr_string));
-  container.Get(1)->SetAttribute ("DateRate", DataRate(dr_string));
+  d0->SetDataRate(DataRate(dr_string));
+  d1->SetDataRate(DataRate(dr_string));
+}
+
+void ChangePropDelay(Ptr<PointToPointChannel> c, double delay)
+{
+  c->SetDelay(MilliSeconds(delay));
+}
+
+PointToPointHelper::PointToPointHelper ()
+{
+  m_queueFactory.SetTypeId ("ns3::DropTailQueue<Packet>");
+  m_deviceFactory.SetTypeId ("ns3::PointToPointNetDevice");
+  m_channelFactory.SetTypeId ("ns3::PointToPointChannel");
+  m_enableFlowControl = true;
+}
+
+auto
+PointToPointHelper::InstallWithoutContainer(Ptr<Node> a, Ptr<Node> b) {
+
+  Ptr<PointToPointNetDevice> devA = m_deviceFactory.Create<PointToPointNetDevice> ();
+  devA->SetAddress (Mac48Address::Allocate ());
+  a->AddDevice (devA);
+  Ptr<Queue<Packet> > queueA = m_queueFactory.Create<Queue<Packet> > ();
+  devA->SetQueue (queueA);
+  Ptr<PointToPointNetDevice> devB = m_deviceFactory.Create<PointToPointNetDevice> ();
+  devB->SetAddress (Mac48Address::Allocate ());
+  b->AddDevice (devB);
+  Ptr<Queue<Packet> > queueB = m_queueFactory.Create<Queue<Packet> > ();
+  devB->SetQueue (queueB);
+  if (m_enableFlowControl)
+    {
+      // Aggregate NetDeviceQueueInterface objects
+      Ptr<NetDeviceQueueInterface> ndqiA = CreateObject<NetDeviceQueueInterface> ();
+      ndqiA->GetTxQueue (0)->ConnectQueueTraces (queueA);
+      devA->AggregateObject (ndqiA);
+      Ptr<NetDeviceQueueInterface> ndqiB = CreateObject<NetDeviceQueueInterface> ();
+      ndqiB->GetTxQueue (0)->ConnectQueueTraces (queueB);
+      devB->AggregateObject (ndqiB);
+    }
+
+  Ptr<PointToPointChannel> channel = 0;
+  channel = m_channelFactory.Create<PointToPointChannel> ();
+
+  devA->Attach (channel);
+  devB->Attach (channel);
+
+  struct retVals {
+    Ptr<PointToPointNetDevice> i1, i2;
+    Ptr<PointToPointChannel> i3;
+  };
+
+  return retVals {devA, devB, channel};
+  // return netDevVector;
 }
 
 int
@@ -236,10 +294,11 @@ main (int argc, char *argv[])
 {
 
   uint32_t maxBytes = 0;
+  uint32_t speed_of_light = 299792458;
   std::string transportProtocol = "ns3::TcpNewReno";
   std::string prefix_file_name = "rtt";
 
-  uint32_t intSimulationEndTime = 200;
+  uint32_t intSimulationEndTime = 700;
   Time simulationEndTime = Seconds (intSimulationEndTime);
   DataRate linkBandwidth ("1Mbps");
   Time linkDelay = MilliSeconds (5);
@@ -250,7 +309,7 @@ main (int argc, char *argv[])
   Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (transportProtocol)));
   Config::SetDefault ("ns3::TcpSocket::InitialCwnd", UintegerValue (10));
 
-  //LogComponentEnable("rtt", LOG_LEVEL_ALL);
+  LogComponentEnable("rtt", LOG_LEVEL_ALL);
 
   CommandLine cmd (__FILE__);
   // cmd.AddValue ("transport_prot", "Transport protocol to use: TcpNewReno, TcpLinuxReno, "
@@ -261,8 +320,8 @@ main (int argc, char *argv[])
   cmd.Parse (argc, argv);
 
   NS_LOG_INFO ("Create nodes.");
-  NodeContainer node;
-  node.Create (2);
+  NodeContainer c;
+  c.Create (2);
 
   MobilityHelper mobility;
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
@@ -277,7 +336,26 @@ main (int argc, char *argv[])
 
   p2p.SetDeviceAttribute ("DataRate", DataRateValue (linkBandwidth));
   p2p.SetChannelAttribute ("Delay", TimeValue (linkDelay));
-  NetDeviceContainer d = p2p.Install (c);
+  // NetDeviceContainer d = p2p.Install (c);
+
+  // std::vector<PointToPointNetDevice> netDevices = p2p.InstallWithoutContainer(c.Get(0), c.Get(1));
+
+  // eyo.SetDataRate(DataRate("1Mbps"));
+
+
+
+  auto [d0, d1, channel] = p2p.InstallWithoutContainer(c.Get(0), c.Get(1));
+
+  NetDeviceContainer d;
+  d.Add(d0);
+  d.Add(d1);
+
+  // NS_LOG_INFO (channel->GetDelay());
+  // channel->SetDelay(MilliSeconds (5));
+  // NS_LOG_INFO (channel->GetDevice(0));
+  //
+  // d0->SetDataRate(DataRate("1Mbps"));
+  // d1->SetDataRate(DataRate("1Mbps"));
 
   // We add IP addresses.
   NS_LOG_INFO ("Assign IP Addresses.");
@@ -288,14 +366,14 @@ main (int argc, char *argv[])
   // Create the animation object and configure for specified output
   AnimationInterface anim ("rtt.xml");
 
-  Ptr<ConstantPositionMobilityModel> mn0 = node.Get (0)->GetObject<ConstantPositionMobilityModel> ();
-  Ptr<ConstantPositionMobilityModel> mn1 = node.Get (1)->GetObject<ConstantPositionMobilityModel> ();
+  Ptr<ConstantPositionMobilityModel> mn0 = c.Get (0)->GetObject<ConstantPositionMobilityModel> ();
+  Ptr<ConstantPositionMobilityModel> mn1 = c.Get (1)->GetObject<ConstantPositionMobilityModel> ();
 
   mn0->SetPosition (Vector ( 0.5, 1.0, 0  ));
   mn1->SetPosition (Vector ( 1.0, 1.0, 0  ));
 
-  anim.UpdateNodeSize(node.Get(0)->GetId(), .1, .1);
-  anim.UpdateNodeSize(node.Get(1)->GetId(), .1, .1);
+  anim.UpdateNodeSize(c.Get(0)->GetId(), .1, .1);
+  anim.UpdateNodeSize(c.Get(1)->GetId(), .1, .1);
 
     // Create router nodes, initialize routing database and set up the routing
   // tables in the nodes.
@@ -304,23 +382,23 @@ main (int argc, char *argv[])
   uint16_t sinkPort = 8080;
   Address sinkAddress (InetSocketAddress (interface.GetAddress(1), sinkPort));     // interface of n4
   PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), sinkPort));
-  ApplicationContainer sinkApp = packetSinkHelper.Install( node.Get (1));
+  ApplicationContainer sinkApp = packetSinkHelper.Install( c.Get (1));
 
   sinkApp.Start (Seconds (0));
   sinkApp.Stop (simulationEndTime);
 
   BulkSendHelper source ("ns3::TcpSocketFactory", sinkAddress);
   source.SetAttribute ("MaxBytes", UintegerValue (maxBytes));
-  ApplicationContainer sourceApp = source.Install (node.Get (0));
+  ApplicationContainer sourceApp = source.Install (c.Get (0));
 
   int start_time = 1;
   sourceApp.Start(Seconds(start_time));
   sourceApp.Stop (simulationEndTime);
 
-  AsciiTraceHelper ascii;
-  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ("rtt.tr");
-  p2p.EnableAsciiAll (stream);
-  p2p.EnablePcapAll ("rtt");
+  // AsciiTraceHelper ascii;
+  // Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ("rtt.tr");
+  // p2p.EnableAsciiAll (stream);
+  // p2p.EnablePcapAll ("rtt");
 
 
   Simulator::Schedule (Seconds (start_time + 0.00001), &TraceCwnd,
@@ -340,8 +418,11 @@ main (int argc, char *argv[])
   int oppo_len = 772;
   int parallel_len = 2901;
 
-  std::string oppo_arr[oppo_len + 1];
-  std::string parallel_arr[parallel_len + 1];
+  std::string oppo_dr_arr[oppo_len + 1];
+  std::string oppo_dist_arr[oppo_len + 1];
+  std::string parallel_dr_arr[parallel_len + 1];
+  std::string parallel_dist_arr[parallel_len + 1];
+
 
   std::string mystring;
   std::fstream myfile;
@@ -351,32 +432,28 @@ main (int argc, char *argv[])
   std::vector<std::string> v;
 
   if ( myfile.is_open() ) { // always check whether the file is open
-
     while(!myfile.eof()) {
       getline(myfile, mystring);
       split(mystring, v, ' ');
-      //std::cout << v.at(1) << "\n";
       if (v.size() > 1) {
-        oppo_arr[i]=v.at(1);
+        // std::cout << v.at(2) << "\n";
+        oppo_dr_arr[i]=v.at(1);
+        oppo_dist_arr[i]=v.at(2);
       }
       i++;
     }
     myfile.close();
-    // while (getline (myfile, mystring)) {
-    //   // Output the text from the file
-    //   std::cout << mystring + "\n";
-    // }
-
   }
 
   for(int i = 0; i < oppo_len ; i++) {
-    int int_converted_vals = std::stoi(oppo_arr[i]);
+    int int_converted_vals = std::stoi(oppo_dr_arr[i]);
     double megabits_per_sec = (double)int_converted_vals / (double)1000000;
     double dummy_datarate = megabits_per_sec / 1000.0;
-    std::cout << dummy_datarate << "\n";//oppo_arr[i];
-
-    Simulator::Schedule (Seconds (i), &ChangeDataRate, d, dummy_datarate);
+    double prop_delay = (double)std::stoi(oppo_dist_arr[i]) / (double)speed_of_light;
+    Simulator::Schedule (Seconds (i), &ChangeDataRate, d0, d1, channel, dummy_datarate);
+    Simulator::Schedule (Seconds (i), &ChangePropDelay, channel, prop_delay);
   }
+  // Simulator::Schedule (Seconds (1), &ChangeDataRate, channel, 0.342);
 
 
   NS_LOG_INFO ("Run Simulation.");
