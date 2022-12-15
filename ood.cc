@@ -15,14 +15,15 @@ run (string tcp_version, bool link_error = false)
   //  --    General Setup   --
   //  --  DON'T TOUCH THIS!  --
   */
-  string error_file_str = "";
-
+  string error_str = "";
+  string error_activated_str = "";
   if (link_error) {   // If packetdrop on rerouting is enabled
-    error_file_str = "-error";
+    error_str = "-error";
   }
 
-  AnimationInterface anim = build_network(tcp_version, error_file_str);   // Network Setup
-  auto [source, sinkAddress] = setupDefaultNodeTraffic(tcp_version, error_file_str);   // Creating Default Sink & Source
+  AnimationInterface anim = build_network(tcp_version, error_str);   // Network Setup
+  auto [source, sinkAddress] = setupDefaultNodeTraffic(tcp_version, error_str);   // Creating Default Sink & Source
+
 
 
   /* --------------------------------------------------------
@@ -89,6 +90,14 @@ run (string tcp_version, bool link_error = false)
 
 
 
+  //  --  For usage in "prints"  --
+  if (link_error) {   // If packetdrop on rerouting is enabled
+    error_activated_str = "With dropped packets on route change.";
+  }
+  else {
+    error_activated_str = "Without dropped packets on route change.";
+  }
+
 
   /*
   //        /\     /\     /\     /\
@@ -100,17 +109,9 @@ run (string tcp_version, bool link_error = false)
   //
   //  --  Write Specific Scenario Script Above This  --
    --------------------------------------------------------*/
-  
 
-  string error_str;
-  if (link_error) {   // If packetdrop on rerouting is enabled
-    error_str = "With dropped packets on route change.";
-  }
-  else {
-    error_str = "Without dropped packets on route change.";
-  }
 
-  NS_LOG_INFO ("\n________________________________________\nStarting Simulation Using TCP " + tcp_version + ".\n" + error_str);
+  NS_LOG_INFO ("\n________________________________________\nStarting Simulation Using TCP " + tcp_version + ".\n" + error_activated_str );
   Simulator::Stop(simulationEndTime);
   Simulator::Run ();
 
@@ -160,7 +161,7 @@ main (int argc, char *argv[])
   uint32_t nCsma = 3;
   uint32_t nWifi = 3;
   bool tracing = false;
-
+activated_
   CommandLine cmd (__FILE__);
   cmd.AddValue ("nCsma", "Number of \"extra\" CSMA nodes/devices", nCsma);
   cmd.AddValue ("nWifi", "Number of wifi STA devices", nWifi);

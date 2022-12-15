@@ -13,7 +13,7 @@
              n2 --------------- n3                  n6 --------------- n7
            /          l2          \                /
           /                        \  l4          /
-      l1 /             (2Mbps, 5ms) \            / l6
+      l1 /                          \            / l6
         /                            \          /
     n1 /                              +-- n5 --+
 
@@ -219,7 +219,7 @@ build_network (string tcp_version, string error)
  // Tracing Ascii Data Setup, tracing every single thing happening in the network
   // Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ( tcp_version + error + ".tr" );
   // p2p.EnableAsciiAll ( stream );
-  // p2p.EnablePcapAll ( tcp_version );
+  p2p.EnablePcapAll ( tcp_version );
 
   // monitor = flowmon.InstallAll ();
 

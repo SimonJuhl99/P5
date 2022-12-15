@@ -18,9 +18,11 @@ ActivateError(Ptr<NetDevice> d, bool activate)
   }
 }
 
-Address createSink(int nodeId, string tcp_version, int port = 8080)
+Address createSink(int nodeId, string tcp_version, int device_id = 1, int port = 8080)
+// Address createSink(int nodeId, string tcp_version, int port = 8080)
 {
-  Address newSinkAddress ( InetSocketAddress ( link_interface[nodeId].GetAddress(1), port ) );     // setup sink interface on node 7
+  Address newSinkAddress ( InetSocketAddress ( link_interface[nodeId].GetAddress(device_id), port ) );     // setup sink interface on node 7
+  // Address newSinkAddress ( InetSocketAddress ( port ) );     // setup sink interface on node 7
   PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress ( Ipv4Address::GetAny (), port ) );
 
   sinkApp = packetSinkHelper.Install( node.Get (nodeId) );   // Install sink application on node
@@ -36,21 +38,29 @@ BulkSendHelper createSource(int nodeId, string tcp_version, Address sink, string
 {
   BulkSendHelper newSource ("ns3::TcpSocketFactory", sink);
   newSource.SetAttribute ("MaxBytes", UintegerValue (datarate));
-  sourceApp = newSource.Install ( node.Get (nodeId) );
+  
+  string node_file = "";
+
+  if (nodeId != 0) {
+    sourceApp.Add(newSource.Install(node.Get(nodeId)));
+    node_file = "-" + std::to_string(nodeId);
+  }
+  else {
+    sourceApp = newSource.Install ( node.Get (nodeId) );
+  }
 
 
   sourceApp.Start ( Seconds ( source_start_time ) );
-  // sourceApp.Start ( Seconds ( start_time ) );
   sourceApp.Stop ( simulationEndTime );
 
 
   // Setup tracing for RTT, Congestion Window and Transmitted Data
   // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceCwnd,
   Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceCwnd,
-                       tcp_version + error + "-cwnd.data", nodeId);
+                       tcp_version + node_file + error + "-cwnd.data", nodeId);
   // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRtt,
   Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceRtt,
-                       tcp_version + error + "-rtt.data", nodeId);
+                       tcp_version + node_file + error + "-rtt.data", nodeId);
 
   return newSource;
 }
