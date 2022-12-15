@@ -189,22 +189,22 @@ main (int argc, char *argv[])
   // transport_prot = std::string ("ns3::") + transport_prot;
 
   NS_LOG_INFO ("Create nodes.");
-  NodeContainer c;
-  c.Create (6);
+  NodeContainer node;
+  node.Create (6);
 
-  NodeContainer n0n1 = NodeContainer (c.Get (0), c.Get (1));
-  NodeContainer n1n2 = NodeContainer (c.Get (1), c.Get (2));
-  NodeContainer n2n3 = NodeContainer (c.Get (2), c.Get (3));
-  NodeContainer n3n4 = NodeContainer (c.Get (3), c.Get (4));
-  NodeContainer n1n5 = NodeContainer (c.Get (1), c.Get (5));
-  NodeContainer n5n3 = NodeContainer (c.Get (5), c.Get (3));
+  NodeContainer n0n1 = NodeContainer (node.Get (0), node.Get (1));
+  NodeContainer n1n2 = NodeContainer (node.Get (1), node.Get (2));
+  NodeContainer n2n3 = NodeContainer (node.Get (2), node.Get (3));
+  NodeContainer n3n4 = NodeContainer (node.Get (3), node.Get (4));
+  NodeContainer n1n5 = NodeContainer (node.Get (1), node.Get (5));
+  NodeContainer n5n3 = NodeContainer (node.Get (5), node.Get (3));
 
   MobilityHelper mobility;
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-  mobility.Install (c);
+  mobility.Install (node);
 
   InternetStackHelper internet;
-  internet.Install (c);
+  internet.Install (node);
 
   // We create the channels first without any IP addressing information
   NS_LOG_INFO ("Create channels.");
@@ -255,12 +255,12 @@ main (int argc, char *argv[])
   // Create the animation object and configure for specified output
   AnimationInterface anim ("two-routes.xml");
 
-  Ptr<ConstantPositionMobilityModel> mn0 = c.Get (0)->GetObject<ConstantPositionMobilityModel> ();
-  Ptr<ConstantPositionMobilityModel> mn1 = c.Get (1)->GetObject<ConstantPositionMobilityModel> ();
-  Ptr<ConstantPositionMobilityModel> mn2 = c.Get (2)->GetObject<ConstantPositionMobilityModel> ();
-  Ptr<ConstantPositionMobilityModel> mn3 = c.Get (3)->GetObject<ConstantPositionMobilityModel> ();
-  Ptr<ConstantPositionMobilityModel> mn4 = c.Get (4)->GetObject<ConstantPositionMobilityModel> ();
-  Ptr<ConstantPositionMobilityModel> mn5 = c.Get (5)->GetObject<ConstantPositionMobilityModel> ();
+  Ptr<ConstantPositionMobilityModel> mn0 = node.Get (0)->GetObject<ConstantPositionMobilityModel> ();
+  Ptr<ConstantPositionMobilityModel> mn1 = node.Get (1)->GetObject<ConstantPositionMobilityModel> ();
+  Ptr<ConstantPositionMobilityModel> mn2 = node.Get (2)->GetObject<ConstantPositionMobilityModel> ();
+  Ptr<ConstantPositionMobilityModel> mn3 = node.Get (3)->GetObject<ConstantPositionMobilityModel> ();
+  Ptr<ConstantPositionMobilityModel> mn4 = node.Get (4)->GetObject<ConstantPositionMobilityModel> ();
+  Ptr<ConstantPositionMobilityModel> mn5 = node.Get (5)->GetObject<ConstantPositionMobilityModel> ();
 
   mn0->SetPosition (Vector ( 0.5, 1.0, 0  ));
   mn1->SetPosition (Vector ( 1.0, 1.0, 0  ));
@@ -269,12 +269,12 @@ main (int argc, char *argv[])
   mn4->SetPosition (Vector ( 2.5, 1.0, 0  ));
   mn5->SetPosition (Vector ( 1.5, 0.7, 0  ));
 
-  anim.UpdateNodeSize(c.Get(0)->GetId(), .1, .1);
-  anim.UpdateNodeSize(c.Get(1)->GetId(), .1, .1);
-  anim.UpdateNodeSize(c.Get(2)->GetId(), .1, .1);
-  anim.UpdateNodeSize(c.Get(3)->GetId(), .1, .1);
-  anim.UpdateNodeSize(c.Get(4)->GetId(), .1, .1);
-  anim.UpdateNodeSize(c.Get(5)->GetId(), .1, .1);
+  anim.UpdateNodeSize(node.Get(0)->GetId(), .1, .1);
+  anim.UpdateNodeSize(node.Get(1)->GetId(), .1, .1);
+  anim.UpdateNodeSize(node.Get(2)->GetId(), .1, .1);
+  anim.UpdateNodeSize(node.Get(3)->GetId(), .1, .1);
+  anim.UpdateNodeSize(node.Get(4)->GetId(), .1, .1);
+  anim.UpdateNodeSize(node.Get(5)->GetId(), .1, .1);
 
   // Create router nodes, initialize routing database and set up the routing
   // tables in the nodes.
@@ -287,7 +287,7 @@ main (int argc, char *argv[])
   uint16_t sinkPort = 8080;
   Address sinkAddress (InetSocketAddress (i3i4.GetAddress(1), sinkPort));     // interface of n4
   PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), sinkPort));
-  ApplicationContainer sinkApp = packetSinkHelper.Install( c.Get (4));
+  ApplicationContainer sinkApp = packetSinkHelper.Install( node.Get (4));
 
   sinkApp.Start (Seconds (0));
   sinkApp.Stop (simulationEndTime);
@@ -295,7 +295,7 @@ main (int argc, char *argv[])
 
   BulkSendHelper source ("ns3::TcpSocketFactory", sinkAddress);
   source.SetAttribute ("MaxBytes", UintegerValue (maxBytes));
-  ApplicationContainer sourceApp = source.Install (c.Get (0));
+  ApplicationContainer sourceApp = source.Install (node.Get (0));
 
   int start_time = 1;
   sourceApp.Start(Seconds(start_time));
@@ -323,7 +323,7 @@ main (int argc, char *argv[])
                        prefix_file_name + "-rx-throughput.data", monitor);
 
   // Get node 1 and its ipv4
-  Ptr<Node> n1 = c.Get (1);
+  Ptr<Node> n1 = node.Get (1);
   Ptr<Ipv4> n1ipv4 = n1->GetObject<Ipv4> ();
   // The first interfaceIndex is 0 for loopback, then the first p2p is numbered 1
   // The interface between node 1 and 2 has index 2:

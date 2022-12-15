@@ -261,8 +261,8 @@ main (int argc, char *argv[])
   cmd.Parse (argc, argv);
 
   NS_LOG_INFO ("Create nodes.");
-  NodeContainer c;
-  c.Create (2);
+  NodeContainer node;
+  node.Create (2);
 
   MobilityHelper mobility;
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
@@ -288,14 +288,14 @@ main (int argc, char *argv[])
   // Create the animation object and configure for specified output
   AnimationInterface anim ("rtt.xml");
 
-  Ptr<ConstantPositionMobilityModel> mn0 = c.Get (0)->GetObject<ConstantPositionMobilityModel> ();
-  Ptr<ConstantPositionMobilityModel> mn1 = c.Get (1)->GetObject<ConstantPositionMobilityModel> ();
+  Ptr<ConstantPositionMobilityModel> mn0 = node.Get (0)->GetObject<ConstantPositionMobilityModel> ();
+  Ptr<ConstantPositionMobilityModel> mn1 = node.Get (1)->GetObject<ConstantPositionMobilityModel> ();
 
   mn0->SetPosition (Vector ( 0.5, 1.0, 0  ));
   mn1->SetPosition (Vector ( 1.0, 1.0, 0  ));
 
-  anim.UpdateNodeSize(c.Get(0)->GetId(), .1, .1);
-  anim.UpdateNodeSize(c.Get(1)->GetId(), .1, .1);
+  anim.UpdateNodeSize(node.Get(0)->GetId(), .1, .1);
+  anim.UpdateNodeSize(node.Get(1)->GetId(), .1, .1);
 
     // Create router nodes, initialize routing database and set up the routing
   // tables in the nodes.
@@ -304,14 +304,14 @@ main (int argc, char *argv[])
   uint16_t sinkPort = 8080;
   Address sinkAddress (InetSocketAddress (interface.GetAddress(1), sinkPort));     // interface of n4
   PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), sinkPort));
-  ApplicationContainer sinkApp = packetSinkHelper.Install( c.Get (1));
+  ApplicationContainer sinkApp = packetSinkHelper.Install( node.Get (1));
 
   sinkApp.Start (Seconds (0));
   sinkApp.Stop (simulationEndTime);
 
   BulkSendHelper source ("ns3::TcpSocketFactory", sinkAddress);
   source.SetAttribute ("MaxBytes", UintegerValue (maxBytes));
-  ApplicationContainer sourceApp = source.Install (c.Get (0));
+  ApplicationContainer sourceApp = source.Install (node.Get (0));
 
   int start_time = 1;
   sourceApp.Start(Seconds(start_time));

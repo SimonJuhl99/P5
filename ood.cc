@@ -9,20 +9,32 @@ static char const *scenario = "Rerouting";
 
 
 int
-run (string tcp_version)
+run (string tcp_version, bool link_error = false)
 {
-    /* --------------------------------------------------------
+  /* --------------------------------------------------------
   //  --    General Setup   --
   //  --  DON'T TOUCH THIS!  --
   */
-  AnimationInterface anim = build_network(tcp_version);   // Network Setup
-  setupDefaultNodeTraffic(tcp_version);   // Creating Default Sink & Source
+  string error_str = "";
+  string error_activated_str = "";
+  if (link_error) {   // If packetdrop on rerouting is enabled
+    error_str = "-error";
+  }
+
+  AnimationInterface anim = build_network(tcp_version, error_str);   // Network Setup
+  auto [source, sinkAddress] = setupDefaultNodeTraffic(tcp_version, error_str);   // Creating Default Sink & Source
 
 
 
   /* --------------------------------------------------------
   //  --  Write Specific Scenario Script Under This  --
-  //  --  START FROM HERE!  --
+  //
+  //      !!--!!  START FROM HERE!  !!--!!
+  //
+  //        ||     ||     ||     ||
+  //        ||     ||     ||     ||
+  //       \  /   \  /   \  /   \  /
+  //        \/     \/     \/     \/
   */
 
 
@@ -43,11 +55,11 @@ run (string tcp_version)
 
 
   // Get node 3 and its ipv4, to prepare changing route
-  Ptr<Node> n3 = c.Get (3);   // Grap third node (before forking)
+  Ptr<Node> n3 = node.Get (3);   // Grap third node (before forking)
   Ptr<Ipv4> n3ipv4 = n3->GetObject<Ipv4> ();
   // The first interfaceIndex is 0 for loopback, then the first p2p connection is numbered 1, numbered by order of creation.
-  uint32_t n3_to_n4_index = 2;    // Connection index between node 3 & 4
-  // uint32_t n3_to_n5_index = 3;    // Connection index between node 3 & 5
+  uint32_t n3_to_n4_connection = 2;    // Connection index between node 3 & 4
+  uint32_t n3_to_n5_connection = 3;    // Connection index between node 3 & 5
 
 
 
@@ -55,36 +67,51 @@ run (string tcp_version)
   //  ---------------------------------------
   //  --  Simulation Rerouting Scheduling  --
 
-  float reroute_time = start_time + 6.027;
+  float first_reroute_time = start_time + 6.007;
+  float second_reroute_time = start_time + 15.007;
 
   // SetDown & SetUp opens and closes that specific connection.
-  Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n3ipv4, n3_to_n4_index);
-  Simulator::Schedule (Seconds (reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n4_index);
-  // Simulator::Schedule (Seconds (reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_index);
-  // Simulator::Schedule (Seconds (reroute_time), &ActivateError, link_container[4].Get (1), true);
+  Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n3ipv4, n3_to_n4_connection);
+  Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n4_connection);
+  Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
+
+  if (link_error) {   // If packetdrop on rerouting is enabled
+    linkDrops(4, first_reroute_time, true);
+  }
+
+  // Rorouting again
+  Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n5_connection);
+  Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
+
+  if (link_error) {   // If packetdrop on rerouting is enabled
+    linkDrops(3, second_reroute_time, true);
+    linkDrops(4, second_reroute_time, false);
+  }
 
 
 
-
-  // Simulator::Schedule (Seconds (start_time + 6), &ActivateError, link_container[4].Get (1), false);
-  // Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetUp, n3ipv4, n3_to_n5_index);
-  // Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetDown, n3ipv4, n3_to_n3_index);
-  // Simulator::Schedule (Seconds (start_time + 6), &ActivateError, link_container[3].Get (1), true);
-
-  // Simulator::Schedule (Seconds (start_time + 9), &ActivateError, link_container[3].Get (1), false);
-  // Simulator::Schedule (Seconds (start_time + 9), &Ipv4::SetUp, n3ipv4, n3_to_n4_index);
-  // Simulator::Schedule (Seconds (start_time + 9), &Ipv4::SetDown, n3ipv4, n3_to_n5_index);
-  // Simulator::Schedule (Seconds (start_time + 9), &ActivateError, link_container[4].Get (1), true);
-
+  //  --  For usage in "prints"  --
+  if (link_error) {   // If packetdrop on rerouting is enabled
+    error_activated_str = "With dropped packets on route change.";
+  }
+  else {
+    error_activated_str = "Without dropped packets on route change.";
+  }
 
 
   /*
-  //  --  STOP HERE!  --
+  //        /\     /\     /\     /\
+  //       /  \   /  \   /  \   /  \
+  //        ||     ||     ||     ||
+  //        ||     ||     ||     ||
+  //
+  //      !!--!!  STOP HERE!  !!--!!
+  //
   //  --  Write Specific Scenario Script Above This  --
    --------------------------------------------------------*/
 
 
-  NS_LOG_INFO ("\nStarting Simulation Using TCP " + tcp_version + ".");
+  NS_LOG_INFO ("\n________________________________________\nStarting Simulation Using TCP " + tcp_version + ".\n" + error_activated_str );
   Simulator::Stop(simulationEndTime);
   Simulator::Run ();
 
@@ -117,8 +144,8 @@ run (string tcp_version)
 
   /////////////////////////////////////////////////
   //  --  Prepare variables for another run  --
-  (&c)->~NodeContainer();
-  new (&c) NodeContainer();
+  (&node)->~NodeContainer();
+  new (&node) NodeContainer();
   resetTracingVars();   // Prepare for next TCP version simulation
 
   return 1;
@@ -134,7 +161,7 @@ main (int argc, char *argv[])
   uint32_t nCsma = 3;
   uint32_t nWifi = 3;
   bool tracing = false;
-
+activated_
   CommandLine cmd (__FILE__);
   cmd.AddValue ("nCsma", "Number of \"extra\" CSMA nodes/devices", nCsma);
   cmd.AddValue ("nWifi", "Number of wifi STA devices", nWifi);
@@ -148,11 +175,10 @@ main (int argc, char *argv[])
   //  Actual Script Running Section
 
   run("Bbr");
+  run("Bbr", true);
   run("NewReno");
-<<<<<<< HEAD
-}
-=======
+  run("NewReno", true);
   run("Vegas");
+  run("Vegas", true);
 
 }
->>>>>>> e1fea9f22d8a720725c68b1413b8e8e6117423e7

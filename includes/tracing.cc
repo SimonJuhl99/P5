@@ -19,9 +19,9 @@ FlowMonitorHelper flowmon;    // Not used before network setup
 Ptr<FlowMonitor> monitor;     // Not used before network setup
 
 // Trace EVERYTHING variable
-AsciiTraceHelper ascii;       // Not used before network setup
+// AsciiTraceHelper ascii;       // Not used before network setup
 
-FlowMonitor::FlowStatsContainer stats;
+// FlowMonitor::FlowStatsContainer stats;
 
 
 static uint32_t
@@ -49,14 +49,24 @@ CwndTracer (string context,  uint32_t oldval, uint32_t newval)
 }
 
 static void
-TraceCwnd (string cwnd_tr_file_name, uint32_t nodeId)
+TraceCwnd(std::string cwnd_tr_file_name, uint32_t nodeId)
 {
-  //NS_LOG_INFO("TraceCwnd Start");
-  // AsciiTraceHelper ascii;
-  cWndStream[nodeId] = ascii.CreateFileStream (cwnd_tr_file_name.c_str ());
-  Config::Connect ("/NodeList/" + std::to_string (nodeId) + "/$ns3::TcpL4Protocol/SocketList/0/CongestionWindow",
-                   MakeCallback (&CwndTracer));
+  AsciiTraceHelper ascii;
+  cWndStream[nodeId] = ascii.CreateFileStream(cwnd_tr_file_name);
+  Config::Connect("/NodeList/" + std::to_string(nodeId) +
+                      "/$ns3::TcpL4Protocol/SocketList/0/CongestionWindow",
+                  MakeCallback(&CwndTracer));
 }
+
+// static void
+// TraceCwnd (string cwnd_tr_file_name, uint32_t nodeId)
+// {
+//   //NS_LOG_INFO("TraceCwnd Start");
+//   AsciiTraceHelper ascii;
+//   cWndStream[nodeId] = ascii.CreateFileStream (cwnd_tr_file_name.c_str ());
+//   Config::Connect ("/NodeList/" + std::to_string (nodeId) + "/$ns3::TcpL4Protocol/SocketList/0/CongestionWindow",
+//                    MakeCallback (&CwndTracer));
+// }
 
 static void
 RttTracer (string context, Time oldval, Time newval)
@@ -81,15 +91,11 @@ TraceRtt (string rtt_tr_file_name, uint32_t nodeId)
 }
 
 
-//////////////////////////////////////////////////////////////////////
-//  --  Skriv de 2 herunder sammen til én samlet, i den ovenover  -- 
-///////////////////////
-
 static void
 TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
 {
-  // FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
-  stats = monitor->GetFlowStats ();
+  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
+  // stats = monitor->GetFlowStats ();
   // pointer to first value in stats
   auto itr = stats.begin ();
   // current time
@@ -104,13 +110,14 @@ TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   // which equals throughput (transmitted data over time)
 
 
-  NS_LOG_INFO ("Previous TX; " + std::to_string(prevTx));
-  NS_LOG_INFO ("Combined TX: " + std::to_string(itr->second.txBytes));
-  int current = itr->second.txBytes - prevTx;
-  NS_LOG_INFO ("Current TX: " + std::to_string(current) + "\n");
+  // NS_LOG_INFO ("Previous TX; " + std::to_string(prevTx));
+  // NS_LOG_INFO ("Combined TX: " + std::to_string(itr->second.txBytes));
+  // int current = itr->second.txBytes - prevTx;
+  // NS_LOG_INFO ("Current TX: " + std::to_string(current) + "\n");
 
 
-  thr <<  curTime << " " << 8 * (current) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
+  // thr <<  curTime << " " << 8 * (current) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
+  thr <<  curTime << " " << 8 * (itr->second.txBytes - prevTx) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
   // current time and current transmitted bytes which for next iteration becomes 'previous'
   prevTxTime = curTime;
   prevTx = itr->second.txBytes;
@@ -124,8 +131,8 @@ TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
 static void
 TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
 {
-  // FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
-  stats = monitor->GetFlowStats ();
+  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
+  // stats = monitor->GetFlowStats ();
   // pointer to first value in stats
   auto itr = stats.begin ();
   // current time
@@ -152,12 +159,13 @@ TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
 }
 
 
-int emptyTraceFiles(string tcp_version)
+int emptyTraceFiles(string tcp_version, string error)
 {
-  std::ofstream rtt (tcp_version + "-rtt.data", std::ios::out);
-  std::ofstream cwnd (tcp_version + "-cwnd.data", std::ios::out);
-  std::ofstream in (tcp_version + "-rx-throughput.data", std::ios::out);
-  std::ofstream out (tcp_version + "-tx-throughput.data", std::ios::out);
+
+  std::ofstream rtt (tcp_version + error + "-rtt.data", std::ios::out);
+  std::ofstream cwnd (tcp_version + error + "-cwnd.data", std::ios::out);
+  std::ofstream in (tcp_version + error + "-rx-throughput.data", std::ios::out);
+  std::ofstream out (tcp_version + error + "-tx-throughput.data", std::ios::out);
   rtt <<  "";
   cwnd <<  "";
   in <<  "";
@@ -168,7 +176,8 @@ int emptyTraceFiles(string tcp_version)
 
 int resetTracingVars()
 {
-   stats = monitor->GetFlowStats ();   // Pull out current package stats
+  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();   // Pull out current package stats
+  // stats = monitor->GetFlowStats ();   // Pull out current package stats
   auto itr = stats.begin ();
 
   //  NS-3 doesn't reset these variables, so set to the final state

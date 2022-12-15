@@ -7,13 +7,13 @@
 
     n0 \      Default Datarate:       +-- n4 --+
         \        8 Mbps              /          \
-         \    Default Delay:        /            \            
+      l0 \    Default Delay:        / l3         \ l5           
           \      5 ms              /              \
-           \                      /                \                
+           \                      /                \          l7      
              n2 --------------- n3                  n6 --------------- n7
-           /                      \                /
-          /                        \              /
-         /             (2Mbps, 5ms) \            / 
+           /          l2          \                /
+          /                        \  l4          /
+      l1 /                          \            / l6
         /                            \          /
     n1 /                              +-- n5 --+
 
@@ -30,7 +30,7 @@
 
 //  ---------------------------------------
 //  --  Setup of Network Variables  --
-NodeContainer c;
+NodeContainer node;
 NodeContainer n0n2;
 NodeContainer n1n2;
 NodeContainer n2n3;
@@ -59,7 +59,7 @@ Ptr<ConstantPositionMobilityModel> mn7;
 // Maximum Source Datarate Setup
 uint32_t maxBytes = 0;      // 0 means "no limit"
 
-Address sinkAddress;
+// Address sinkAddress;
 
 // // AsciiTraceHelper ascii;
 // FlowMonitorHelper flowmon;
@@ -74,13 +74,13 @@ Address sinkAddress;
 
 
 AnimationInterface    // Need to be the XML tracing object, for it to work.
-build_network (string tcp_version)
+build_network (string tcp_version, string error)
 {
   string transportProtocol = "ns3::Tcp" + tcp_version;
 
 
   // Source Setup
-  Config::SetDefault ("ns3::BulkSendApplication::SendSize", UintegerValue (100000));    // Change the packetsize of a source application
+  // Config::SetDefault ("ns3::BulkSendApplication::SendSize", UintegerValue (100000));    // Change the packetsize of a source application
   //Config::SetDefault ("ns3::BulkSendApplication::DataRate", StringValue ("448kb/s"));    // Change the datarate of source applications
 
 
@@ -94,24 +94,24 @@ build_network (string tcp_version)
   ////////////////////////////////////////////
   //  --  Start actual network setup  --
   NS_LOG_INFO ("\nCreating nodes.");
-  c.Create (8);
+  node.Create (8);
 
 
-  n0n2 = NodeContainer (c.Get (0), c.Get (2));    // Nye ende noder
-  n1n2 = NodeContainer (c.Get (1), c.Get (2));    // Nye ende noder
-  n2n3 = NodeContainer (c.Get (2), c.Get (3));    // Gammel n0n1
-  n3n4 = NodeContainer (c.Get (3), c.Get (4));    // Gammel n1n5
-  n3n5 = NodeContainer (c.Get (3), c.Get (5));    // Gammel n1n2
-  n4n6 = NodeContainer (c.Get (4), c.Get (6));    // Gammel n5n3
-  n5n6 = NodeContainer (c.Get (5), c.Get (6));    // Gammel n2n3
-  n6n7 = NodeContainer (c.Get (6), c.Get (7));    // Gammel n3n4
+  n0n2 = NodeContainer (node.Get (0), node.Get (2));    // Nye ende noder
+  n1n2 = NodeContainer (node.Get (1), node.Get (2));    // Nye ende noder
+  n2n3 = NodeContainer (node.Get (2), node.Get (3));    // Gammel n0n1
+  n3n4 = NodeContainer (node.Get (3), node.Get (4));    // Gammel n1n5
+  n3n5 = NodeContainer (node.Get (3), node.Get (5));    // Gammel n1n2
+  n4n6 = NodeContainer (node.Get (4), node.Get (6));    // Gammel n5n3
+  n5n6 = NodeContainer (node.Get (5), node.Get (6));    // Gammel n2n3
+  n6n7 = NodeContainer (node.Get (6), node.Get (7));    // Gammel n3n4
 
   MobilityHelper mobility;
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-  mobility.Install (c);
+  mobility.Install (node);
 
   InternetStackHelper internet;
-  internet.Install (c);
+  internet.Install (node);
 
   // We create the channels first without any IP addressing information
   NS_LOG_INFO ("Creating channels.");
@@ -179,16 +179,16 @@ build_network (string tcp_version)
 
 
   // XML tracing for NetAnim setup 
-  AnimationInterface anim ( tcp_version + ".xml");    
+  AnimationInterface anim ( tcp_version + error + ".xml");    
   
-  mn0 = c.Get (0)  ->  GetObject<ConstantPositionMobilityModel> ();
-  mn1 = c.Get (1)  ->  GetObject<ConstantPositionMobilityModel> ();
-  mn2 = c.Get (2)  ->  GetObject<ConstantPositionMobilityModel> ();
-  mn3 = c.Get (3)  ->  GetObject<ConstantPositionMobilityModel> ();
-  mn4 = c.Get (4)  ->  GetObject<ConstantPositionMobilityModel> ();
-  mn5 = c.Get (5)  ->  GetObject<ConstantPositionMobilityModel> ();
-  mn6 = c.Get (6)  ->  GetObject<ConstantPositionMobilityModel> ();
-  mn7 = c.Get (7)  ->  GetObject<ConstantPositionMobilityModel> ();
+  mn0 = node.Get (0)  ->  GetObject<ConstantPositionMobilityModel> ();
+  mn1 = node.Get (1)  ->  GetObject<ConstantPositionMobilityModel> ();
+  mn2 = node.Get (2)  ->  GetObject<ConstantPositionMobilityModel> ();
+  mn3 = node.Get (3)  ->  GetObject<ConstantPositionMobilityModel> ();
+  mn4 = node.Get (4)  ->  GetObject<ConstantPositionMobilityModel> ();
+  mn5 = node.Get (5)  ->  GetObject<ConstantPositionMobilityModel> ();
+  mn6 = node.Get (6)  ->  GetObject<ConstantPositionMobilityModel> ();
+  mn7 = node.Get (7)  ->  GetObject<ConstantPositionMobilityModel> ();
 
   mn0->SetPosition ( Vector ( 0.5, 0.7, 0 ) );
   mn1->SetPosition ( Vector ( 0.5, 1.3, 0 ) );
@@ -199,22 +199,28 @@ build_network (string tcp_version)
   mn6->SetPosition ( Vector ( 2.5, 1.0, 0 ) );
   mn7->SetPosition ( Vector ( 3.0, 1.0, 0 ) );
 
-  anim.UpdateNodeSize( c.Get(0)->GetId(), .1, .1 );
-  anim.UpdateNodeSize( c.Get(1)->GetId(), .1, .1 );
-  anim.UpdateNodeSize( c.Get(2)->GetId(), .1, .1 );
-  anim.UpdateNodeSize( c.Get(3)->GetId(), .1, .1 );
-  anim.UpdateNodeSize( c.Get(4)->GetId(), .1, .1 );
-  anim.UpdateNodeSize( c.Get(5)->GetId(), .1, .1 );
-  anim.UpdateNodeSize( c.Get(6)->GetId(), .1, .1 );
-  anim.UpdateNodeSize( c.Get(7)->GetId(), .1, .1 );
+  anim.UpdateNodeSize( node.Get(0)->GetId(), .1, .1 );
+  anim.UpdateNodeSize( node.Get(1)->GetId(), .1, .1 );
+  anim.UpdateNodeSize( node.Get(2)->GetId(), .1, .1 );
+  anim.UpdateNodeSize( node.Get(3)->GetId(), .1, .1 );
+  anim.UpdateNodeSize( node.Get(4)->GetId(), .1, .1 );
+  anim.UpdateNodeSize( node.Get(5)->GetId(), .1, .1 );
+  anim.UpdateNodeSize( node.Get(6)->GetId(), .1, .1 );
+  anim.UpdateNodeSize( node.Get(7)->GetId(), .1, .1 );
 
+  uint64_t maxPktsPerFile = 1844674407370955161;   // Max size
+
+  anim.SetMaxPktsPerTraceFile(maxPktsPerFile);    // To trace larger simulations
+
+  // anim.EnableQueueCounters();   // Tracing queues, dequeues and queue drops
+  // anim.Ipv4DropTrace();   // Getting info on why packets are dropped... seems to need some parameters though... might be wrong... 
 
  // Tracing Ascii Data Setup, tracing every single thing happening in the network
-  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ( tcp_version + ".tr" );
-  p2p.EnableAsciiAll ( stream );
+  // Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ( tcp_version + error + ".tr" );
+  // p2p.EnableAsciiAll ( stream );
   // p2p.EnablePcapAll ( tcp_version );
 
-  monitor = flowmon.InstallAll ();
+  // monitor = flowmon.InstallAll ();
 
 
   return anim;
