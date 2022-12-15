@@ -54,7 +54,7 @@ run (string tcp_version, bool link_error = false)
 
 
   // Get node 3 and its ipv4, to prepare changing route
-  Ptr<Node> n3 = c.Get (3);   // Grap third node (before forking)
+  Ptr<Node> n3 = node.Get (3);   // Grap third node (before forking)
   Ptr<Ipv4> n3ipv4 = n3->GetObject<Ipv4> ();
   // The first interfaceIndex is 0 for loopback, then the first p2p connection is numbered 1, numbered by order of creation.
   uint32_t n3_to_n4_connection = 2;    // Connection index between node 3 & 4
@@ -143,8 +143,8 @@ run (string tcp_version, bool link_error = false)
 
   /////////////////////////////////////////////////
   //  --  Prepare variables for another run  --
-  (&c)->~NodeContainer();
-  new (&c) NodeContainer();
+  (&node)->~NodeContainer();
+  new (&node) NodeContainer();
   resetTracingVars();   // Prepare for next TCP version simulation
 
   return 1;

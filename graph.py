@@ -18,6 +18,18 @@ f_rxtp = open("NewReno-rx-throughput.data", "r")
 # f_rtt = open("Bbr-rtt.data", "r")
 # f_txtp = open("Bbr-tx-throughput.data", "r")
 # f_rxtp = open("Bbr-rx-throughput.data", "r")
+# f_cwnd = open("Vegas-error-cwnd.data", "r")
+# f_rtt = open("Vegas-error-rtt.data", "r")
+# f_txtp = open("Vegas-error-tx-throughput.data", "r")
+# f_rxtp = open("Vegas-error-rx-throughput.data", "r")
+# f_cwnd = open("NewReno-error-cwnd.data", "r")
+# f_rtt = open("NewReno-error-rtt.data", "r")
+# f_txtp = open("NewReno-error-tx-throughput.data", "r")
+# f_rxtp = open("NewReno-error-rx-throughput.data", "r")
+# f_cwnd = open("Bbr-error-cwnd.data", "r")
+# f_rtt = open("Bbr-error-rtt.data", "r")
+# f_txtp = open("Bbr-error-tx-throughput.data", "r")
+# f_rxtp = open("Bbr-error-rx-throughput.data", "r")
 # print(f.read().splitlines())
 
 cwnd_time = []
@@ -61,10 +73,10 @@ for i in f_txtp.read().splitlines():
         value = float(0)
     exp = exp - 9
     combined = float( (mantisa * (10**exp)))  
-    # print(f"Mantisa in Tx: {mantisa}")      
-    # print(f"Exp in Tx: {exp}")       
-    # print(f"Value in Tx: {value}")       
-    # print(f"Combined in Tx: {combined}\n")
+    print(f"Mantisa in Tx: {mantisa}")      
+    print(f"Exp in Tx: {exp}")       
+    print(f"Value in Tx: {value}")       
+    print(f"Combined in Tx: {combined}\n")
 
     txtp_time.append(float(combined))        # New Split Thing
     txtp_values.append(value)
@@ -82,10 +94,10 @@ for i in f_rxtp.read().splitlines():
         exp = 0
     exp = exp - 9
     combined = float( (mantisa * (10**exp)))  
-    # print(f"Mantisa in Rx: {mantisa}")      
-    # print(f"Exp in Rx: {exp}")       
-    # print(f"Value in Rx: {value}")       
-    # print(f"Combined in Rx: {combined}\n")
+    print(f"Mantisa in Rx: {mantisa}")      
+    print(f"Exp in Rx: {exp}")       
+    print(f"Value in Rx: {value}")       
+    print(f"Combined in Rx: {combined}\n")
 
     rxtp_time.append(float(combined))
     rxtp_values.append(float(tp_splitdata[1]))

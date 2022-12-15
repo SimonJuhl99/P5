@@ -1,5 +1,5 @@
 Address sinkAddress;
-ApplicationContainer sinkApp; 
+ApplicationContainer sinkApp;
 ApplicationContainer sourceApp;
 
 static void
@@ -18,12 +18,12 @@ ActivateError(Ptr<NetDevice> d, bool activate)
   }
 }
 
-Address createSink(int node, string tcp_version, int port = 8080)
+Address createSink(int nodeId, string tcp_version, int port = 8080)
 {
-  Address newSinkAddress ( InetSocketAddress ( link_interface[node].GetAddress(1), port ) );     // setup sink interface on node 7
+  Address newSinkAddress ( InetSocketAddress ( link_interface[nodeId].GetAddress(1), port ) );     // setup sink interface on node 7
   PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress ( Ipv4Address::GetAny (), port ) );
-  sinkApp = packetSinkHelper.Install( c.Get (7) );   // Install sink application on node 7
-  // ApplicationContainer sinkApp = packetSinkHelper.Install( c.Get (7) );   // Install sink application on node 7
+
+  sinkApp = packetSinkHelper.Install( node.Get (nodeId) );   // Install sink application on node
 
   // sinkApp.Start ( Seconds ( start_time ) );
   sinkApp.Start ( Seconds ( 0 ) );
@@ -32,12 +32,11 @@ Address createSink(int node, string tcp_version, int port = 8080)
   return newSinkAddress;
 }
 
-BulkSendHelper createSource(int node, string tcp_version, Address sink, string error, int datarate = maxBytes)
+BulkSendHelper createSource(int nodeId, string tcp_version, Address sink, string error, int datarate = maxBytes)
 {
   BulkSendHelper newSource ("ns3::TcpSocketFactory", sink);
   newSource.SetAttribute ("MaxBytes", UintegerValue (datarate));
-  sourceApp = newSource.Install ( c.Get (node) );
-  // ApplicationContainer sourceApp = newSource.Install ( c.Get (node) );
+  sourceApp = newSource.Install ( node.Get (nodeId) );
 
 
   sourceApp.Start ( Seconds ( source_start_time ) );
@@ -48,10 +47,10 @@ BulkSendHelper createSource(int node, string tcp_version, Address sink, string e
   // Setup tracing for RTT, Congestion Window and Transmitted Data
   // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceCwnd,
   Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceCwnd,
-                       tcp_version + error + "-cwnd.data", node);
+                       tcp_version + error + "-cwnd.data", nodeId);
   // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRtt,
   Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceRtt,
-                       tcp_version + error + "-rtt.data", node);
+                       tcp_version + error + "-rtt.data", nodeId);
 
   return newSource;
 }
@@ -91,10 +90,10 @@ auto setupDefaultNodeTraffic(string tcp_version, string error)
   // return {source, sinkAddress};
 }
 
-int linkDrops(int node, float time, bool state)
+int linkDrops(int nodeId, float time, bool state)
 {
-    Simulator::Schedule (Seconds (time), &ActivateError, link_container[node+2].Get (0), state);
-    Simulator::Schedule (Seconds (time), &ActivateError, link_container[node].Get (1), state);
+    Simulator::Schedule (Seconds (time), &ActivateError, link_container[nodeId+2].Get (0), state);
+    Simulator::Schedule (Seconds (time), &ActivateError, link_container[nodeId].Get (1), state);
 
     return 1;
 }
