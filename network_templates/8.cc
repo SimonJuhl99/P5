@@ -7,13 +7,13 @@
 
     n0 \      Default Datarate:       +-- n4 --+
         \        8 Mbps              /          \
-         \    Default Delay:        /            \            
+      l0 \    Default Delay:        / l3         \ l5           
           \      5 ms              /              \
-           \                      /                \                
+           \                      /                \          l7      
              n2 --------------- n3                  n6 --------------- n7
-           /                      \                /
-          /                        \              /
-         /             (2Mbps, 5ms) \            / 
+           /          l2          \                /
+          /                        \  l4          /
+      l1 /             (2Mbps, 5ms) \            / l6
         /                            \          /
     n1 /                              +-- n5 --+
 
@@ -74,7 +74,7 @@ uint32_t maxBytes = 0;      // 0 means "no limit"
 
 
 AnimationInterface    // Need to be the XML tracing object, for it to work.
-build_network (string tcp_version)
+build_network (string tcp_version, string error)
 {
   string transportProtocol = "ns3::Tcp" + tcp_version;
 
@@ -179,7 +179,7 @@ build_network (string tcp_version)
 
 
   // XML tracing for NetAnim setup 
-  AnimationInterface anim ( tcp_version + ".xml");    
+  AnimationInterface anim ( tcp_version + error + ".xml");    
   
   mn0 = c.Get (0)  ->  GetObject<ConstantPositionMobilityModel> ();
   mn1 = c.Get (1)  ->  GetObject<ConstantPositionMobilityModel> ();
@@ -208,9 +208,15 @@ build_network (string tcp_version)
   anim.UpdateNodeSize( c.Get(6)->GetId(), .1, .1 );
   anim.UpdateNodeSize( c.Get(7)->GetId(), .1, .1 );
 
+  uint64_t maxPktsPerFile = 1844674407370955161;   // Max size
+
+  anim.SetMaxPktsPerTraceFile(maxPktsPerFile);    // To trace larger simulations
+
+  // anim.EnableQueueCounters();   // Tracing queues, dequeues and queue drops
+  // anim.Ipv4DropTrace();   // Getting info on why packets are dropped... seems to need some parameters though... might be wrong... 
 
  // Tracing Ascii Data Setup, tracing every single thing happening in the network
-  // Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ( tcp_version + ".tr" );
+  // Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ( tcp_version + error + ".tr" );
   // p2p.EnableAsciiAll ( stream );
   // p2p.EnablePcapAll ( tcp_version );
 

@@ -9,25 +9,31 @@ static char const *scenario = "Rerouting";
 
 
 int
-run (string tcp_version)
+run (string tcp_version, bool link_error = false)
 {
-    /* --------------------------------------------------------
+  /* --------------------------------------------------------
   //  --    General Setup   --
   //  --  DON'T TOUCH THIS!  --
   */
-  AnimationInterface anim = build_network(tcp_version);   // Network Setup
-  auto [source, sinkAddress] = setupDefaultNodeTraffic(tcp_version);   // Creating Default Sink & Source
+  string error_file_str = "";
 
+  if (link_error) {   // If packetdrop on rerouting is enabled
+    error_file_str = "-error";
+  }
 
-
-
-
-
+  AnimationInterface anim = build_network(tcp_version, error_file_str);   // Network Setup
+  auto [source, sinkAddress] = setupDefaultNodeTraffic(tcp_version, error_file_str);   // Creating Default Sink & Source
 
 
   /* --------------------------------------------------------
   //  --  Write Specific Scenario Script Under This  --
-  //  --  START FROM HERE!  --
+  //
+  //      !!--!!  START FROM HERE!  !!--!!
+  //
+  //        ||     ||     ||     ||
+  //        ||     ||     ||     ||
+  //       \  /   \  /   \  /   \  /
+  //        \/     \/     \/     \/
   */
 
 
@@ -60,41 +66,51 @@ run (string tcp_version)
   //  ---------------------------------------
   //  --  Simulation Rerouting Scheduling  --
 
-  float first_reroute_time = start_time + 6.027;
-  float second_reroute_time = start_time + 15.027;
+  float first_reroute_time = start_time + 6.007;
+  float second_reroute_time = start_time + 15.007;
 
   // SetDown & SetUp opens and closes that specific connection.
   Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n3ipv4, n3_to_n4_connection);
   Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n4_connection);
   Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
 
+  if (link_error) {   // If packetdrop on rerouting is enabled
+    linkDrops(4, first_reroute_time, true);
+  }
+
   // Rorouting again
   Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n5_connection);
   Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
 
+  if (link_error) {   // If packetdrop on rerouting is enabled
+    linkDrops(3, second_reroute_time, true);
+    linkDrops(4, second_reroute_time, false);
+  }
 
-
-  // Simulator::Schedule (Seconds (first_reroute_time), &ActivateError, link_container[4].Get (1), true);
-
-  // Simulator::Schedule (Seconds (start_time + 6), &ActivateError, link_container[4].Get (1), false);
-  // Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetUp, n3ipv4, n3_to_n5_connection);
-  // Simulator::Schedule (Seconds (start_time + 6), &Ipv4::SetDown, n3ipv4, n3_to_n3_connection);
-  // Simulator::Schedule (Seconds (start_time + 6), &ActivateError, link_container[3].Get (1), true);
-
-  // Simulator::Schedule (Seconds (start_time + 9), &ActivateError, link_container[3].Get (1), false);
-  // Simulator::Schedule (Seconds (start_time + 9), &Ipv4::SetUp, n3ipv4, n3_to_n4_connection);
-  // Simulator::Schedule (Seconds (start_time + 9), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
-  // Simulator::Schedule (Seconds (start_time + 9), &ActivateError, link_container[4].Get (1), true);
 
 
 
   /*
-  //  --  STOP HERE!  --
+  //        /\     /\     /\     /\
+  //       /  \   /  \   /  \   /  \
+  //        ||     ||     ||     ||
+  //        ||     ||     ||     ||
+  //
+  //      !!--!!  STOP HERE!  !!--!!
+  //
   //  --  Write Specific Scenario Script Above This  --
    --------------------------------------------------------*/
+  
 
+  string error_str;
+  if (link_error) {   // If packetdrop on rerouting is enabled
+    error_str = "With dropped packets on route change.";
+  }
+  else {
+    error_str = "Without dropped packets on route change.";
+  }
 
-  NS_LOG_INFO ("\nStarting Simulation Using TCP " + tcp_version + ".");
+  NS_LOG_INFO ("\n________________________________________\nStarting Simulation Using TCP " + tcp_version + ".\n" + error_str);
   Simulator::Stop(simulationEndTime);
   Simulator::Run ();
 
@@ -158,7 +174,10 @@ main (int argc, char *argv[])
   //  Actual Script Running Section
 
   run("Bbr");
+  run("Bbr", true);
   run("NewReno");
+  run("NewReno", true);
   run("Vegas");
+  run("Vegas", true);
 
 }

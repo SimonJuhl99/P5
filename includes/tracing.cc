@@ -159,12 +159,13 @@ TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
 }
 
 
-int emptyTraceFiles(string tcp_version)
+int emptyTraceFiles(string tcp_version, string error)
 {
-  std::ofstream rtt (tcp_version + "-rtt.data", std::ios::out);
-  std::ofstream cwnd (tcp_version + "-cwnd.data", std::ios::out);
-  std::ofstream in (tcp_version + "-rx-throughput.data", std::ios::out);
-  std::ofstream out (tcp_version + "-tx-throughput.data", std::ios::out);
+
+  std::ofstream rtt (tcp_version + error + "-rtt.data", std::ios::out);
+  std::ofstream cwnd (tcp_version + error + "-cwnd.data", std::ios::out);
+  std::ofstream in (tcp_version + error + "-rx-throughput.data", std::ios::out);
+  std::ofstream out (tcp_version + error + "-tx-throughput.data", std::ios::out);
   rtt <<  "";
   cwnd <<  "";
   in <<  "";
