@@ -198,7 +198,8 @@ void ChangeDataRate(Ptr<PointToPointNetDevice> d0, Ptr<PointToPointNetDevice> d1
 
 void ChangePropDelay(Ptr<PointToPointChannel> c, double delay)
 {
-  c->SetDelay(MilliSeconds(delay));
+  c->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));
+  // c->SetDelay(MilliSeconds(delay));
 }
 
 PointToPointHelper::PointToPointHelper ()
@@ -313,6 +314,7 @@ ScheduleDataRateAndDelay(Ptr<PointToPointNetDevice> d0, Ptr<PointToPointNetDevic
     Simulator::Schedule (Seconds (i), &ChangeDataRate, d0, d1, c, scaled_datarate);
     Simulator::Schedule (Seconds (i), &ChangePropDelay, c, prop_delay);
   }
+
 }
 
 int
@@ -323,7 +325,7 @@ main (int argc, char *argv[])
   std::string transportProtocol = "ns3::TcpNewReno";
   std::string prefix_file_name = "rtt";
 
-  uint32_t intSimulationEndTime = 200;
+  uint32_t intSimulationEndTime = 700;
   Time simulationEndTime = Seconds (intSimulationEndTime);
   DataRate linkBandwidth ("1Mbps");
   Time linkDelay = MilliSeconds (5);
@@ -354,11 +356,16 @@ main (int argc, char *argv[])
   PointToPointHelper p2p;
 
   p2p.SetDeviceAttribute ("DataRate", DataRateValue (linkBandwidth));
-  p2p.SetChannelAttribute ("Delay", TimeValue (linkDelay));
+  // p2p.SetChannelAttribute ("Delay", TimeValue (linkDelay));
 
 
   auto [d0, d1, channel1] = p2p.InstallWithoutContainer(c.Get(0), c.Get(1));
   auto [d2, d3, channel2] = p2p.InstallWithoutContainer(c.Get(1), c.Get(2));
+
+  channel1->SetAttribute("Delay", StringValue(std::to_string(.1) + "s"));
+  channel2->SetAttribute("Delay", StringValue(std::to_string(.1) + "s"));
+  // channel1->SetDelay(MilliSeconds(50));
+  // channel2->SetDelay(MilliSeconds(50));
 
   NetDeviceContainer dc1;
   dc1.Add(d0);
@@ -433,7 +440,7 @@ main (int argc, char *argv[])
 
   // param: netdevice, netdevice, channel, oppo_data = true, shifted_start
   ScheduleDataRateAndDelay(d0, d1, channel1, true, 0);
-  ScheduleDataRateAndDelay(d2, d3, channel2, true, 200);
+  ScheduleDataRateAndDelay(d2, d3, channel2, true, 0);
 
   // Simulator::Schedule (Seconds (1), &ChangeDataRate, channel, 0.342);
 
