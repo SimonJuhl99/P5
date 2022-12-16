@@ -7,22 +7,56 @@ static char const *scenario = "Rerouting";
 #include "network_templates/functions.cc"
 
 
-// int changeDelay(int link, int delay = 5){
-//   Time newDelay = MilliSeconds (delay);
-//   p2p.SetChannelAttribute ("Delay", TimeValue (newDelay));
-//   link_container[link] = p2p.Install (n5n6);   // Gammel d2d3
+// static std::map<string,bool> config, default_config;
+// static std::map<string,bool> default_config;
+static std::map<const char*,bool> default_config;
+std::map<const char*,bool> default_config["link_error"] = false; 
+// static std::map<string,bool> default_config["link_error"] = false; 
+// static std::map<string,bool> default_config["moving"] = false; 
+// static std::map<string,bool> default_config["rerouting"] = false; 
+// static std::map<string,bool> default_config["congestion"] = false;
 
-//   return 1;
-// }
+// default_config["link_error"] = false; 
+default_config["moving"] = false; 
+default_config["rerouting"] = false; 
+default_config["congestion"] = false;
+
+
+// void printIt(std::map<int,int> m) {
+// void printIt(std::map<string,int> m) {
+void printIt(std::map<string,bool> m) {
+    // for(std::map<int,int>::iterator it=m.begin();it!=m.end();++it)
+    // for(std::map<string,int>::iterator it=m.begin();it!=m.end();++it)
+    for(std::map<string,bool>::iterator it=m.begin();it!=m.end();++it)
+        std::cout << it->first<<":"<<it->second<<" ";
+    std::cout << "\n";
+}
 
 
 int
-run (string tcp_version, bool link_error = false)
+run (string tcp_version, bool link_error = false, std::map<string,bool> config = *default_config)
 {
   /* --------------------------------------------------------
   //  --    General Setup   --
   //  --  DON'T TOUCH THIS!  --
   */
+  // std::map<int,int> config, default_config;
+  // config[1] = 11; config[2] = 12; config[3] = 13;
+  // default_config[2] = 20; default_config[3] = 30; default_config[4] = 40;
+
+
+
+  // config["link_error"] = false; config["rerouting"] = true; config["congestion"] = true;
+  
+  // if (config){
+    config.insert(default_config.begin(), default_config.end());    // config takes presidence here.
+  // }
+
+
+
+
+  printIt(config);
+
   string error_str = "";
   string error_activated_str = "";
   if (link_error) {   // If packetdrop on rerouting is enabled
@@ -46,17 +80,6 @@ run (string tcp_version, bool link_error = false)
   */
 
 
-  // Create bottleneck in one of the links
-
-  // DataRate bottleneckBandwidth ("1Mbps");
-  // p2p.SetDeviceAttribute ("DataRate", DataRateValue (bottleneckBandwidth));
-  // Time bottleneckDelay = MilliSeconds (200);
-  // p2p.SetChannelAttribute ("Delay", TimeValue (bottleneckDelay));
-  // link_container[6] = p2p.Install (n5n6);   // Gammel d2d3
-
-
-
-
   /////////////////////////////////////
   //  --  Active script part  --
   NS_LOG_INFO ("Creating Applications.");
@@ -78,10 +101,8 @@ run (string tcp_version, bool link_error = false)
   float first_reroute_time = start_time + 6.007;
   float second_reroute_time = start_time + 15.007;
 
-
   // SetDown & SetUp opens and closes that specific connection.
   Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n3ipv4, n3_to_n4_connection);
-  
   Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n4_connection);
   Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
 
@@ -184,11 +205,11 @@ main (int argc, char *argv[])
   //  ----------------------------------
   //  Actual Script Running Section
 
-  // run("Bbr");
-  // run("Bbr", true);
+  run("Bbr");
+  run("Bbr", true);
   run("NewReno");
-  // run("NewReno", true);
-  // run("Vegas");
-  // run("Vegas", true);
+  run("NewReno", true);
+  run("Vegas");
+  run("Vegas", true);
 
 }
