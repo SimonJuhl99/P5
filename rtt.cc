@@ -1,62 +1,21 @@
-/*      --  Roundtrip Script --
-//  ----------------------------------------------
-    Network nodes: 21.142.213 satellites (COME ON ELON!, WHAT 'U GOT?)
-    Network template: SKRIV DET!
+/*
 
-    -------------------------
-// - Default Network Topology - \\
+WILL ONLY WORK IF you
 
-       Wifi 10.1.3.0
-                     AP
-      *    *    *    *
-      |    |    |    |    10.1.1.0
-     n5   n6   n7   n0 -------------- n1   n2   n3   n4
-                       point-to-point  |    |    |    |
-                                       ================
-                                         LAN 10.1.2.0
+1. open src/point-to-point/model/point-to-point-channel.cc and create the following method:
+
+void
+PointToPointChannel::SetDelay (Time const &time)
+{
+  m_delay = time;
+}
+
+2. afterwards go to src/point-to-point/model/point-to-point-channel.h and add
+the following line to the public methods
+
+void SetDelay (Time const &time);
 
 */
-
-
-
-// REPLACE WITH A REAL SCRIPT!!!
-//
-// KEEP AND UPDATE THE TOP COMMENT/EXPLANATION
-
-
-/*      --  Out-of-Order Script --
-//  ----------------------------------
-    Network nodes: 21.142.213 satellites (COME ON ELON!, WHAT 'U GOT?)
-    Network template: SKRIV DET!
-
-    -------------------------
-// - Default Network Topology - \\
-
-
-                           +-- n5 --+
-                          /          \
-            (8Mbps, 5ms) /            \ (8Mbps, 5ms)
-                        /              \
-      (8Mbps, 5ms)     /                \     (8Mbps, 5ms)
-  n0 --------------- n1                  n3 --------------- n4
-                       \                /
-                        \              /
-            (2Mbps, 5ms) \            / (8Mbps, 5ms)
-                          \          /
-                           +-- n2 --+
-*/
-
-
-
-// REPLACE WITH A REAL SCRIPT!!!
-//
-// KEEP AND UPDATE THE TOP COMMENT/EXPLANATION
-
-
-///////////////////////////////////////////
-/////  --  Placeholder Code  --
-//  NS-3 need "functioning code" for parser-files to be recognized
-///////////
 
 #include <iostream>
 #include <fstream>
@@ -289,22 +248,86 @@ PointToPointHelper::InstallWithoutContainer(Ptr<Node> a, Ptr<Node> b) {
   // return netDevVector;
 }
 
+void
+ScheduleDataRateAndDelay(Ptr<PointToPointNetDevice> d0, Ptr<PointToPointNetDevice> d1, Ptr<PointToPointChannel> c, bool oppo, int shift)
+{
+  uint32_t speed_of_light = 299792458;
+  int oppo_len = 772;
+  int parallel_len = 2901;
+  int arr_len;
+
+  std::string oppo_dr_arr[oppo_len + 1];
+  std::string oppo_dist_arr[oppo_len + 1];
+  std::string parallel_dr_arr[parallel_len + 1];
+  std::string parallel_dist_arr[parallel_len + 1];
+
+  std::string mystring;
+  std::fstream myfile;
+
+  if (oppo) {
+    arr_len = oppo_len;
+    myfile.open("oppo.data");
+  } else {
+    arr_len = parallel_len;
+    myfile.open("parallel.data");
+  }
+
+  int i = 0;
+  std::vector<std::string> v;
+
+  if ( myfile.is_open() ) { // always check whether the file is open
+    while(!myfile.eof()) {
+      getline(myfile, mystring);
+      split(mystring, v, ' ');
+      if (v.size() > 1) {
+        // std::cout << v.at(0) << " " << v.at(1) << " "<< v.at(2) << "\n";
+        if (oppo) {
+          oppo_dr_arr[i]=v.at(1);
+          oppo_dist_arr[i]=v.at(2);
+        } else {
+          parallel_dr_arr[i]=v.at(1);
+          parallel_dist_arr[i]=v.at(2);
+        }
+      }
+      i++;
+    }
+    myfile.close();
+  }
+
+  int int_converted_dr_vals;
+  double prop_delay;
+
+  // std::cout << std::stoi(parallel_dr_arr[1268]) << " yo" << "\n";
+  for(int i = 0; i < arr_len ; i++) {
+    if (oppo) {
+      int_converted_dr_vals = std::stoi(oppo_dr_arr[(i + shift) % arr_len]);
+      prop_delay = (double)std::stoi(oppo_dist_arr[(i + shift) % arr_len]) / (double)speed_of_light;
+    } else {
+      int_converted_dr_vals = std::stoul(parallel_dr_arr[(i + shift) % arr_len]);
+      prop_delay = (double)std::stoul(parallel_dist_arr[(i + shift) % arr_len]) / (double)speed_of_light;
+    }
+    // int int_converted_dr_vals = std::stoi(oppo_dr_arr[i]);
+    // double prop_delay = (double)std::stoi(oppo_dist_arr[i]) / (double)speed_of_light;
+    double megabits_per_sec = (double)int_converted_dr_vals / (double)1000000;
+    double scaled_datarate = megabits_per_sec / 1000.0;
+    Simulator::Schedule (Seconds (i), &ChangeDataRate, d0, d1, c, scaled_datarate);
+    Simulator::Schedule (Seconds (i), &ChangePropDelay, c, prop_delay);
+  }
+}
+
 int
 main (int argc, char *argv[])
 {
 
   uint32_t maxBytes = 0;
-  uint32_t speed_of_light = 299792458;
   std::string transportProtocol = "ns3::TcpNewReno";
   std::string prefix_file_name = "rtt";
 
-  uint32_t intSimulationEndTime = 700;
+  uint32_t intSimulationEndTime = 200;
   Time simulationEndTime = Seconds (intSimulationEndTime);
   DataRate linkBandwidth ("1Mbps");
   Time linkDelay = MilliSeconds (5);
 
-  //Config::SetDefault ("ns3::BulkSendApplication::SendSize", UintegerValue (100000));
-  //Config::SetDefault ("ns3::BulkSendApplication::DataRate", StringValue ("448kb/s"));
   Config::SetDefault ("ns3::Ipv4GlobalRouting::RespondToInterfaceEvents", BooleanValue (true));
   Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (transportProtocol)));
   Config::SetDefault ("ns3::TcpSocket::InitialCwnd", UintegerValue (10));
@@ -312,16 +335,12 @@ main (int argc, char *argv[])
   LogComponentEnable("rtt", LOG_LEVEL_ALL);
 
   CommandLine cmd (__FILE__);
-  // cmd.AddValue ("transport_prot", "Transport protocol to use: TcpNewReno, TcpLinuxReno, "
-  //               "TcpHybla, TcpHighSpeed, TcpHtcp, TcpVegas, TcpScalable, TcpVeno, "
-  //               "TcpBic, TcpYeah, TcpIllinois, TcpWestwood, TcpWestwoodPlus, TcpLedbat, "
-	// 	"TcpLp, TcpDctcp, TcpCubic, TcpBbr", transport_prot);
 
   cmd.Parse (argc, argv);
 
   NS_LOG_INFO ("Create nodes.");
   NodeContainer c;
-  c.Create (2);
+  c.Create (3);
 
   MobilityHelper mobility;
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
@@ -336,32 +355,28 @@ main (int argc, char *argv[])
 
   p2p.SetDeviceAttribute ("DataRate", DataRateValue (linkBandwidth));
   p2p.SetChannelAttribute ("Delay", TimeValue (linkDelay));
-  // NetDeviceContainer d = p2p.Install (c);
-
-  // std::vector<PointToPointNetDevice> netDevices = p2p.InstallWithoutContainer(c.Get(0), c.Get(1));
-
-  // eyo.SetDataRate(DataRate("1Mbps"));
 
 
+  auto [d0, d1, channel1] = p2p.InstallWithoutContainer(c.Get(0), c.Get(1));
+  auto [d2, d3, channel2] = p2p.InstallWithoutContainer(c.Get(1), c.Get(2));
 
-  auto [d0, d1, channel] = p2p.InstallWithoutContainer(c.Get(0), c.Get(1));
+  NetDeviceContainer dc1;
+  dc1.Add(d0);
+  dc1.Add(d1);
 
-  NetDeviceContainer d;
-  d.Add(d0);
-  d.Add(d1);
+  NetDeviceContainer dc2;
+  dc2.Add(d2);
+  dc2.Add(d3);
 
-  // NS_LOG_INFO (channel->GetDelay());
-  // channel->SetDelay(MilliSeconds (5));
-  // NS_LOG_INFO (channel->GetDevice(0));
-  //
-  // d0->SetDataRate(DataRate("1Mbps"));
-  // d1->SetDataRate(DataRate("1Mbps"));
 
-  // We add IP addresses.
   NS_LOG_INFO ("Assign IP Addresses.");
   Ipv4AddressHelper ipv4;
+
   ipv4.SetBase ("10.1.1.0", "255.255.255.0");
-  Ipv4InterfaceContainer interface = ipv4.Assign (d);     // need container to get address more easily later on
+  Ipv4InterfaceContainer interface1 = ipv4.Assign (dc1);     // need container to get address more easily later on
+
+  ipv4.SetBase ("10.1.2.0", "255.255.255.0");
+  Ipv4InterfaceContainer interface2 = ipv4.Assign (dc2);
 
   // Create the animation object and configure for specified output
   AnimationInterface anim ("rtt.xml");
@@ -380,9 +395,9 @@ main (int argc, char *argv[])
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
   uint16_t sinkPort = 8080;
-  Address sinkAddress (InetSocketAddress (interface.GetAddress(1), sinkPort));     // interface of n4
+  Address sinkAddress (InetSocketAddress (interface2.GetAddress(1), sinkPort));     // interface of n4
   PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), sinkPort));
-  ApplicationContainer sinkApp = packetSinkHelper.Install( c.Get (1));
+  ApplicationContainer sinkApp = packetSinkHelper.Install( c.Get (2));
 
   sinkApp.Start (Seconds (0));
   sinkApp.Stop (simulationEndTime);
@@ -395,10 +410,10 @@ main (int argc, char *argv[])
   sourceApp.Start(Seconds(start_time));
   sourceApp.Stop (simulationEndTime);
 
-  // AsciiTraceHelper ascii;
-  // Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ("rtt.tr");
-  // p2p.EnableAsciiAll (stream);
-  // p2p.EnablePcapAll ("rtt");
+  AsciiTraceHelper ascii;
+  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ("rtt.tr");
+  p2p.EnableAsciiAll (stream);
+  p2p.EnablePcapAll ("rtt");
 
 
   Simulator::Schedule (Seconds (start_time + 0.00001), &TraceCwnd,
@@ -415,44 +430,11 @@ main (int argc, char *argv[])
   Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRxThroughput,
                        prefix_file_name + "-rx-throughput.data", monitor);
 
-  int oppo_len = 772;
-  int parallel_len = 2901;
 
-  std::string oppo_dr_arr[oppo_len + 1];
-  std::string oppo_dist_arr[oppo_len + 1];
-  std::string parallel_dr_arr[parallel_len + 1];
-  std::string parallel_dist_arr[parallel_len + 1];
+  // param: netdevice, netdevice, channel, oppo_data = true, shifted_start
+  ScheduleDataRateAndDelay(d0, d1, channel1, true, 0);
+  ScheduleDataRateAndDelay(d2, d3, channel2, true, 200);
 
-
-  std::string mystring;
-  std::fstream myfile;
-  myfile.open("oppo.data");
-
-  int i = 0;
-  std::vector<std::string> v;
-
-  if ( myfile.is_open() ) { // always check whether the file is open
-    while(!myfile.eof()) {
-      getline(myfile, mystring);
-      split(mystring, v, ' ');
-      if (v.size() > 1) {
-        // std::cout << v.at(2) << "\n";
-        oppo_dr_arr[i]=v.at(1);
-        oppo_dist_arr[i]=v.at(2);
-      }
-      i++;
-    }
-    myfile.close();
-  }
-
-  for(int i = 0; i < oppo_len ; i++) {
-    int int_converted_vals = std::stoi(oppo_dr_arr[i]);
-    double megabits_per_sec = (double)int_converted_vals / (double)1000000;
-    double dummy_datarate = megabits_per_sec / 1000.0;
-    double prop_delay = (double)std::stoi(oppo_dist_arr[i]) / (double)speed_of_light;
-    Simulator::Schedule (Seconds (i), &ChangeDataRate, d0, d1, channel, dummy_datarate);
-    Simulator::Schedule (Seconds (i), &ChangePropDelay, channel, prop_delay);
-  }
   // Simulator::Schedule (Seconds (1), &ChangeDataRate, channel, 0.342);
 
 
