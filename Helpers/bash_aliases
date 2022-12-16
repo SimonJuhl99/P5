@@ -185,6 +185,13 @@ p5() {
         echo -e "Opening P5 Directory in \e[3m$explorer\e[0m"
         $explorer $p5_path             # Enter P5 directory in your explorer
 
+    elif [[ $@ = plot ]]   # If NS-3 cleaning function is wanted
+    then
+        set -- "${@:2}"     # Remove the "plot" argument
+        echo -e "Opening plot"
+        python $p5_path/Grapher.py $@
+    
+
     else
     # elif [[ $@ = dir ]]         # Directory argument is entered
     # then

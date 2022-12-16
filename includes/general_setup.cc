@@ -25,7 +25,7 @@ NS_LOG_COMPONENT_DEFINE (scenario);
 // Simulation Time Setup
 int start_time = 0;
 // int end_time = start_time + 240;    // Maybe our "optimal" sim-time
-int end_time = start_time + 5;
+int end_time = start_time + 30;
 Time simulationEndTime = Seconds (end_time);     // Set simulation time
 int source_start_time = 0;
 
