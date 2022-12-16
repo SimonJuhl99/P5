@@ -1,62 +1,21 @@
-/*      --  Roundtrip Script --
-//  ----------------------------------------------
-    Network nodes: 21.142.213 satellites (COME ON ELON!, WHAT 'U GOT?)
-    Network template: SKRIV DET!
+/*
 
-    -------------------------
-// - Default Network Topology - \\
+WILL ONLY WORK IF you
 
-       Wifi 10.1.3.0
-                     AP
-      *    *    *    *
-      |    |    |    |    10.1.1.0
-     n5   n6   n7   n0 -------------- n1   n2   n3   n4
-                       point-to-point  |    |    |    |
-                                       ================
-                                         LAN 10.1.2.0
+1. open src/point-to-point/model/point-to-point-channel.cc and create the following method:
+
+void
+PointToPointChannel::SetDelay (Time const &time)
+{
+  m_delay = time;
+}
+
+2. afterwards go to src/point-to-point/model/point-to-point-channel.h and add
+the following line to the public methods
+
+void SetDelay (Time const &time);
 
 */
-
-
-
-// REPLACE WITH A REAL SCRIPT!!!
-//
-// KEEP AND UPDATE THE TOP COMMENT/EXPLANATION
-
-
-/*      --  Out-of-Order Script --
-//  ----------------------------------
-    Network nodes: 21.142.213 satellites (COME ON ELON!, WHAT 'U GOT?)
-    Network template: SKRIV DET!
-
-    -------------------------
-// - Default Network Topology - \\
-
-
-                           +-- n5 --+
-                          /          \
-            (8Mbps, 5ms) /            \ (8Mbps, 5ms)
-                        /              \
-      (8Mbps, 5ms)     /                \     (8Mbps, 5ms)
-  n0 --------------- n1                  n3 --------------- n4
-                       \                /
-                        \              /
-            (2Mbps, 5ms) \            / (8Mbps, 5ms)
-                          \          /
-                           +-- n2 --+
-*/
-
-
-
-// REPLACE WITH A REAL SCRIPT!!!
-//
-// KEEP AND UPDATE THE TOP COMMENT/EXPLANATION
-
-
-///////////////////////////////////////////
-/////  --  Placeholder Code  --
-//  NS-3 need "functioning code" for parser-files to be recognized
-///////////
 
 #include <iostream>
 #include <fstream>
@@ -69,6 +28,7 @@
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/point-to-point-module.h"
+#include "ns3/point-to-point-net-device.h"
 #include "ns3/csma-module.h"
 #include "ns3/applications-module.h"
 #include "ns3/internet-module.h"
@@ -78,10 +38,12 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("two_routes");
+NS_LOG_COMPONENT_DEFINE ("rtt");
 
-uint32_t prev = 0;
-Time prevTime = Seconds (0);
+uint32_t prevTx = 0;
+uint32_t prevRx = 0;
+Time prevTxTime = Seconds (0);
+Time prevRxTime = Seconds (0);
 
 static std::map<uint32_t, bool> firstCwnd;
 static std::map<uint32_t, bool> firstRtt;
@@ -176,12 +138,12 @@ TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   // transmitted bytes since last transmission divided by
   // the time since last transmission
   // which equals throughput (transmitted data over time)
-  thr <<  curTime << " " << 8 * (itr->second.txBytes - prev) / (1000 * 1000 * (curTime.GetSeconds () - prevTime.GetSeconds ())) << std::endl;
+  thr <<  curTime << " " << 8 * (itr->second.txBytes - prevTx) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
   // current time and current transmitted bytes which for next iteration becomes 'previous'
-  prevTime = curTime;
-  prev = itr->second.txBytes;
+  prevTxTime = curTime;
+  prevTx = itr->second.txBytes;
   // recursive call every x seconds
-  Simulator::Schedule (Seconds (0.05), &TraceTxThroughput, tp_tr_file_name, monitor);
+  Simulator::Schedule (Seconds (0.5), &TraceTxThroughput, tp_tr_file_name, monitor);
 }
 
 static void
@@ -200,12 +162,15 @@ TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   // transmitted bytes since last transmission divided by
   // the time since last transmission
   // which equals throughput (transmitted data over time)
-  thr <<  curTime << " " << 8 * (itr->second.rxBytes - prev) / (1000 * 1000 * (curTime.GetSeconds () - prevTime.GetSeconds ())) << std::endl;
+  thr <<  curTime << " " << 8 * (itr->second.rxBytes - prevRx) / (1000 * 1000 * (curTime.GetSeconds () - prevRxTime.GetSeconds ())) << std::endl;
+
+  // thr <<  curTime << " " << itr->second.rxBytes << " " << prev  << std::endl;
+  //<< i->second.rxBytes * 8.0 / simulationEndTime.GetSeconds () / 1000 / 1000  << " Mbps\n";
   // current time and current transmitted bytes which for next iteration becomes 'previous'
-  prevTime = curTime;
-  prev = itr->second.rxBytes;
+  prevRxTime = curTime;
+  prevRx = itr->second.rxBytes;
   // recursive call every x seconds
-  Simulator::Schedule (Seconds (0.05), &TraceRxThroughput, tp_tr_file_name, monitor);
+  Simulator::Schedule (Seconds (0.5), &TraceRxThroughput, tp_tr_file_name, monitor);
 }
 
 size_t split(const std::string &txt, std::vector<std::string> &strs, char ch)
@@ -224,11 +189,130 @@ size_t split(const std::string &txt, std::vector<std::string> &strs, char ch)
   return strs.size();
 }
 
-void ChangeDataRate(Ptr<NetDeviceContainer> container, double dr)
+void ChangeDataRate(Ptr<PointToPointNetDevice> d0, Ptr<PointToPointNetDevice> d1, Ptr<PointToPointChannel> c, double dr)
 {
   std::string dr_string = std::to_string(dr) + "Mbps";
-  container.Get(0)->SetAttribute ("DateRate", DataRate(dr_string));
-  container.Get(1)->SetAttribute ("DateRate", DataRate(dr_string));
+  d0->SetDataRate(DataRate(dr_string));
+  d1->SetDataRate(DataRate(dr_string));
+}
+
+void ChangePropDelay(Ptr<PointToPointChannel> c, double delay)
+{
+  c->SetDelay(MilliSeconds(delay));
+}
+
+PointToPointHelper::PointToPointHelper ()
+{
+  m_queueFactory.SetTypeId ("ns3::DropTailQueue<Packet>");
+  m_deviceFactory.SetTypeId ("ns3::PointToPointNetDevice");
+  m_channelFactory.SetTypeId ("ns3::PointToPointChannel");
+  m_enableFlowControl = true;
+}
+
+auto
+PointToPointHelper::InstallWithoutContainer(Ptr<Node> a, Ptr<Node> b) {
+
+  Ptr<PointToPointNetDevice> devA = m_deviceFactory.Create<PointToPointNetDevice> ();
+  devA->SetAddress (Mac48Address::Allocate ());
+  a->AddDevice (devA);
+  Ptr<Queue<Packet> > queueA = m_queueFactory.Create<Queue<Packet> > ();
+  devA->SetQueue (queueA);
+  Ptr<PointToPointNetDevice> devB = m_deviceFactory.Create<PointToPointNetDevice> ();
+  devB->SetAddress (Mac48Address::Allocate ());
+  b->AddDevice (devB);
+  Ptr<Queue<Packet> > queueB = m_queueFactory.Create<Queue<Packet> > ();
+  devB->SetQueue (queueB);
+  if (m_enableFlowControl)
+    {
+      // Aggregate NetDeviceQueueInterface objects
+      Ptr<NetDeviceQueueInterface> ndqiA = CreateObject<NetDeviceQueueInterface> ();
+      ndqiA->GetTxQueue (0)->ConnectQueueTraces (queueA);
+      devA->AggregateObject (ndqiA);
+      Ptr<NetDeviceQueueInterface> ndqiB = CreateObject<NetDeviceQueueInterface> ();
+      ndqiB->GetTxQueue (0)->ConnectQueueTraces (queueB);
+      devB->AggregateObject (ndqiB);
+    }
+
+  Ptr<PointToPointChannel> channel = 0;
+  channel = m_channelFactory.Create<PointToPointChannel> ();
+
+  devA->Attach (channel);
+  devB->Attach (channel);
+
+  struct retVals {
+    Ptr<PointToPointNetDevice> i1, i2;
+    Ptr<PointToPointChannel> i3;
+  };
+
+  return retVals {devA, devB, channel};
+  // return netDevVector;
+}
+
+void
+ScheduleDataRateAndDelay(Ptr<PointToPointNetDevice> d0, Ptr<PointToPointNetDevice> d1, Ptr<PointToPointChannel> c, bool oppo, int shift)
+{
+  uint32_t speed_of_light = 299792458;
+  int oppo_len = 772;
+  int parallel_len = 2901;
+  int arr_len;
+
+  std::string oppo_dr_arr[oppo_len + 1];
+  std::string oppo_dist_arr[oppo_len + 1];
+  std::string parallel_dr_arr[parallel_len + 1];
+  std::string parallel_dist_arr[parallel_len + 1];
+
+  std::string mystring;
+  std::fstream myfile;
+
+  if (oppo) {
+    arr_len = oppo_len;
+    myfile.open("oppo.data");
+  } else {
+    arr_len = parallel_len;
+    myfile.open("parallel.data");
+  }
+
+  int i = 0;
+  std::vector<std::string> v;
+
+  if ( myfile.is_open() ) { // always check whether the file is open
+    while(!myfile.eof()) {
+      getline(myfile, mystring);
+      split(mystring, v, ' ');
+      if (v.size() > 1) {
+        // std::cout << v.at(0) << " " << v.at(1) << " "<< v.at(2) << "\n";
+        if (oppo) {
+          oppo_dr_arr[i]=v.at(1);
+          oppo_dist_arr[i]=v.at(2);
+        } else {
+          parallel_dr_arr[i]=v.at(1);
+          parallel_dist_arr[i]=v.at(2);
+        }
+      }
+      i++;
+    }
+    myfile.close();
+  }
+
+  int int_converted_dr_vals;
+  double prop_delay;
+
+  // std::cout << std::stoi(parallel_dr_arr[1268]) << " yo" << "\n";
+  for(int i = 0; i < arr_len ; i++) {
+    if (oppo) {
+      int_converted_dr_vals = std::stoi(oppo_dr_arr[(i + shift) % arr_len]);
+      prop_delay = (double)std::stoi(oppo_dist_arr[(i + shift) % arr_len]) / (double)speed_of_light;
+    } else {
+      int_converted_dr_vals = std::stoul(parallel_dr_arr[(i + shift) % arr_len]);
+      prop_delay = (double)std::stoul(parallel_dist_arr[(i + shift) % arr_len]) / (double)speed_of_light;
+    }
+    // int int_converted_dr_vals = std::stoi(oppo_dr_arr[i]);
+    // double prop_delay = (double)std::stoi(oppo_dist_arr[i]) / (double)speed_of_light;
+    double megabits_per_sec = (double)int_converted_dr_vals / (double)1000000;
+    double scaled_datarate = megabits_per_sec / 1000.0;
+    Simulator::Schedule (Seconds (i), &ChangeDataRate, d0, d1, c, scaled_datarate);
+    Simulator::Schedule (Seconds (i), &ChangePropDelay, c, prop_delay);
+  }
 }
 
 int
@@ -244,25 +328,19 @@ main (int argc, char *argv[])
   DataRate linkBandwidth ("1Mbps");
   Time linkDelay = MilliSeconds (5);
 
-  //Config::SetDefault ("ns3::BulkSendApplication::SendSize", UintegerValue (100000));
-  //Config::SetDefault ("ns3::BulkSendApplication::DataRate", StringValue ("448kb/s"));
   Config::SetDefault ("ns3::Ipv4GlobalRouting::RespondToInterfaceEvents", BooleanValue (true));
   Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (transportProtocol)));
   Config::SetDefault ("ns3::TcpSocket::InitialCwnd", UintegerValue (10));
 
-  //LogComponentEnable("rtt", LOG_LEVEL_ALL);
+  LogComponentEnable("rtt", LOG_LEVEL_ALL);
 
   CommandLine cmd (__FILE__);
-  // cmd.AddValue ("transport_prot", "Transport protocol to use: TcpNewReno, TcpLinuxReno, "
-  //               "TcpHybla, TcpHighSpeed, TcpHtcp, TcpVegas, TcpScalable, TcpVeno, "
-  //               "TcpBic, TcpYeah, TcpIllinois, TcpWestwood, TcpWestwoodPlus, TcpLedbat, "
-	// 	"TcpLp, TcpDctcp, TcpCubic, TcpBbr", transport_prot);
 
   cmd.Parse (argc, argv);
 
   NS_LOG_INFO ("Create nodes.");
-  NodeContainer node;
-  node.Create (2);
+  NodeContainer c;
+  c.Create (3);
 
   MobilityHelper mobility;
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
@@ -277,41 +355,56 @@ main (int argc, char *argv[])
 
   p2p.SetDeviceAttribute ("DataRate", DataRateValue (linkBandwidth));
   p2p.SetChannelAttribute ("Delay", TimeValue (linkDelay));
-  NetDeviceContainer d = p2p.Install (c);
 
-  // We add IP addresses.
+
+  auto [d0, d1, channel1] = p2p.InstallWithoutContainer(c.Get(0), c.Get(1));
+  auto [d2, d3, channel2] = p2p.InstallWithoutContainer(c.Get(1), c.Get(2));
+
+  NetDeviceContainer dc1;
+  dc1.Add(d0);
+  dc1.Add(d1);
+
+  NetDeviceContainer dc2;
+  dc2.Add(d2);
+  dc2.Add(d3);
+
+
   NS_LOG_INFO ("Assign IP Addresses.");
   Ipv4AddressHelper ipv4;
+
   ipv4.SetBase ("10.1.1.0", "255.255.255.0");
-  Ipv4InterfaceContainer interface = ipv4.Assign (d);     // need container to get address more easily later on
+  Ipv4InterfaceContainer interface1 = ipv4.Assign (dc1);     // need container to get address more easily later on
+
+  ipv4.SetBase ("10.1.2.0", "255.255.255.0");
+  Ipv4InterfaceContainer interface2 = ipv4.Assign (dc2);
 
   // Create the animation object and configure for specified output
   AnimationInterface anim ("rtt.xml");
 
-  Ptr<ConstantPositionMobilityModel> mn0 = node.Get (0)->GetObject<ConstantPositionMobilityModel> ();
-  Ptr<ConstantPositionMobilityModel> mn1 = node.Get (1)->GetObject<ConstantPositionMobilityModel> ();
+  Ptr<ConstantPositionMobilityModel> mn0 = c.Get (0)->GetObject<ConstantPositionMobilityModel> ();
+  Ptr<ConstantPositionMobilityModel> mn1 = c.Get (1)->GetObject<ConstantPositionMobilityModel> ();
 
   mn0->SetPosition (Vector ( 0.5, 1.0, 0  ));
   mn1->SetPosition (Vector ( 1.0, 1.0, 0  ));
 
-  anim.UpdateNodeSize(node.Get(0)->GetId(), .1, .1);
-  anim.UpdateNodeSize(node.Get(1)->GetId(), .1, .1);
+  anim.UpdateNodeSize(c.Get(0)->GetId(), .1, .1);
+  anim.UpdateNodeSize(c.Get(1)->GetId(), .1, .1);
 
     // Create router nodes, initialize routing database and set up the routing
   // tables in the nodes.
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
   uint16_t sinkPort = 8080;
-  Address sinkAddress (InetSocketAddress (interface.GetAddress(1), sinkPort));     // interface of n4
+  Address sinkAddress (InetSocketAddress (interface2.GetAddress(1), sinkPort));     // interface of n4
   PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), sinkPort));
-  ApplicationContainer sinkApp = packetSinkHelper.Install( node.Get (1));
+  ApplicationContainer sinkApp = packetSinkHelper.Install( c.Get (2));
 
   sinkApp.Start (Seconds (0));
   sinkApp.Stop (simulationEndTime);
 
   BulkSendHelper source ("ns3::TcpSocketFactory", sinkAddress);
   source.SetAttribute ("MaxBytes", UintegerValue (maxBytes));
-  ApplicationContainer sourceApp = source.Install (node.Get (0));
+  ApplicationContainer sourceApp = source.Install (c.Get (0));
 
   int start_time = 1;
   sourceApp.Start(Seconds(start_time));
@@ -337,46 +430,12 @@ main (int argc, char *argv[])
   Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRxThroughput,
                        prefix_file_name + "-rx-throughput.data", monitor);
 
-  int oppo_len = 772;
-  int parallel_len = 2901;
 
-  std::string oppo_arr[oppo_len + 1];
-  std::string parallel_arr[parallel_len + 1];
+  // param: netdevice, netdevice, channel, oppo_data = true, shifted_start
+  ScheduleDataRateAndDelay(d0, d1, channel1, true, 0);
+  ScheduleDataRateAndDelay(d2, d3, channel2, true, 200);
 
-  std::string mystring;
-  std::fstream myfile;
-  myfile.open("oppo.data");
-
-  int i = 0;
-  std::vector<std::string> v;
-
-  if ( myfile.is_open() ) { // always check whether the file is open
-
-    while(!myfile.eof()) {
-      getline(myfile, mystring);
-      split(mystring, v, ' ');
-      //std::cout << v.at(1) << "\n";
-      if (v.size() > 1) {
-        oppo_arr[i]=v.at(1);
-      }
-      i++;
-    }
-    myfile.close();
-    // while (getline (myfile, mystring)) {
-    //   // Output the text from the file
-    //   std::cout << mystring + "\n";
-    // }
-
-  }
-
-  for(int i = 0; i < oppo_len ; i++) {
-    int int_converted_vals = std::stoi(oppo_arr[i]);
-    double megabits_per_sec = (double)int_converted_vals / (double)1000000;
-    double dummy_datarate = megabits_per_sec / 1000.0;
-    std::cout << dummy_datarate << "\n";//oppo_arr[i];
-
-    Simulator::Schedule (Seconds (i), &ChangeDataRate, d, dummy_datarate);
-  }
+  // Simulator::Schedule (Seconds (1), &ChangeDataRate, channel, 0.342);
 
 
   NS_LOG_INFO ("Run Simulation.");
