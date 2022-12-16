@@ -9,17 +9,17 @@ static char const *scenario = "Rerouting";
 
 // static std::map<string,bool> config, default_config;
 // static std::map<string,bool> default_config;
-static std::map<const char*,bool> default_config;
-std::map<const char*,bool> default_config["link_error"] = false; 
+// static std::map<const char*,bool> default_config;
+// std::map<const char*,bool> default_config["link_error"] = false; 
 // static std::map<string,bool> default_config["link_error"] = false; 
 // static std::map<string,bool> default_config["moving"] = false; 
 // static std::map<string,bool> default_config["rerouting"] = false; 
 // static std::map<string,bool> default_config["congestion"] = false;
 
 // default_config["link_error"] = false; 
-default_config["moving"] = false; 
-default_config["rerouting"] = false; 
-default_config["congestion"] = false;
+// default_config["moving"] = false; 
+// default_config["rerouting"] = false; 
+// default_config["congestion"] = false;
 
 
 // void printIt(std::map<int,int> m) {
@@ -34,23 +34,26 @@ void printIt(std::map<string,bool> m) {
 
 
 int
-run (string tcp_version, bool link_error = false, std::map<string,bool> config = *default_config)
+run (string tcp_version, bool link_error = false, std::map<string,bool> config = std::map<string,bool> config["random"] = false)
 {
   /* --------------------------------------------------------
   //  --    General Setup   --
   //  --  DON'T TOUCH THIS!  --
   */
-  // std::map<int,int> config, default_config;
+  std::map<int,int> config, default_config;
   // config[1] = 11; config[2] = 12; config[3] = 13;
   // default_config[2] = 20; default_config[3] = 30; default_config[4] = 40;
 
-
+  default_config["link_error"] = false; 
+  default_config["moving"] = false; 
+  default_config["rerouting"] = false; 
+  default_config["congestion"] = false;
 
   // config["link_error"] = false; config["rerouting"] = true; config["congestion"] = true;
   
-  // if (config){
+  if (config != NULL){
     config.insert(default_config.begin(), default_config.end());    // config takes presidence here.
-  // }
+  }
 
 
 

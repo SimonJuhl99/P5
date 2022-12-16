@@ -1,5 +1,12 @@
 /*
 
+Inside the Point-to-Point Helper file at:
+  "ns-3.36.1/src/point-to-point/helper/point-to-point-helper.h"
+at the "public" part (line 46 - 197) insert the line:
+  "auto InstallWithoutContainer(Ptr<Node> a, Ptr<Node> b);"
+
+
+
 WILL ONLY WORK IF you
 
 1. open src/point-to-point/model/point-to-point-channel.cc and create the following method:
@@ -16,6 +23,18 @@ the following line to the public methods
 void SetDelay (Time const &time);
 
 */
+
+#ifdef WINDOWS
+#include <direct.h>
+#define GetCurrentDir _getcwd
+#else
+#include <unistd.h>
+#define GetCurrentDir getcwd
+#endif
+#include <regex>
+
+
+
 
 #include <iostream>
 #include <fstream>
@@ -37,6 +56,8 @@ void SetDelay (Time const &time);
 #include "ns3/flow-monitor-module.h"
 
 using namespace ns3;
+using std::string;
+using std::cout;
 
 NS_LOG_COMPONENT_DEFINE ("rtt");
 
@@ -265,13 +286,34 @@ ScheduleDataRateAndDelay(Ptr<PointToPointNetDevice> d0, Ptr<PointToPointNetDevic
   std::string mystring;
   std::fstream myfile;
 
+  ///////////////////////////////////////
+  // Find path to P5 folder !!!!
+
+  char buff[FILENAME_MAX]; //create string buffer to hold path
+  GetCurrentDir( buff, FILENAME_MAX );
+  string current_working_dir(buff);
+  // cout << "Current working dir is: " << current_working_dir << std::endl;
+
+  std::smatch match;
+  std::regex expression ("((.*)/ns-3.36.1/)(.*)");
+  std::regex_search ( current_working_dir, match, expression );
+  string path = match[1];
+  path = path + "P5/satLinkData/";
+  // cout << "New path is: " << path << std::endl;
+
+
+  // Find path to P5 folder !!!!
+  ///////////////////////////////////////
+
+
   if (oppo) {
     arr_len = oppo_len;
-    myfile.open("oppo.data");
+    myfile.open( path + "oppo.data");     // FILE PARSING HERE!!
   } else {
     arr_len = parallel_len;
-    myfile.open("parallel.data");
+    myfile.open( path + "parallel.data");     // FILE PARSING HERE!!
   }
+
 
   int i = 0;
   std::vector<std::string> v;
@@ -325,7 +367,8 @@ main (int argc, char *argv[])
   std::string transportProtocol = "ns3::TcpNewReno";
   std::string prefix_file_name = "rtt";
 
-  uint32_t intSimulationEndTime = 700;
+  // uint32_t intSimulationEndTime = 700;
+  uint32_t intSimulationEndTime = 7;
   Time simulationEndTime = Seconds (intSimulationEndTime);
   DataRate linkBandwidth ("1Mbps");
   Time linkDelay = MilliSeconds (5);
