@@ -100,6 +100,39 @@ TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   auto itr = stats.begin ();
   // current time
   Time curTime = Now ();
+
+
+  /////////////////////////////////////////////////////////////
+  // Multi Tracing Thing... creates issues right now...
+  ////////////
+
+  // Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
+   
+  // for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
+  // {
+  //     if (i-> first == 1 || i->first == 2)
+  //     { 
+  //       int flow = i->first;
+  //       std::ofstream thr (tp_tr_file_name + std::to_string(flow) , std::ios::out | std::ios::app);
+  //       thr <<  curTime << " " << 8 * (i->second.txBytes - prevTx[flow]) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
+        
+  //       prevTx[flow] = i->second.txBytes;
+
+
+  //     // Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
+  //       // std::cout << "Flow " << i->first  << " (" << t.sourceAddress << " -> " << t.destinationAddress << ")\n";
+  //       // std::cout << "  Tx Packets: " << i->second.txPackets << "\n";
+  //       // std::cout << "  Tx Bytes:   " << i->second.txBytes << "\n";
+  //       // std::cout << "  Rx Bytes:   " << i->second.rxBytes << "\n";
+  //     }
+  // }
+
+
+  ////////////
+  // Multi Tracing Thing... creates issues right now...
+  /////////////////////////////////////////////////////////////
+
+
   // ofstream is an output stream class to operate on files
   // bitwise 'or' on either allowing output or appending to a stream
   std::ofstream thr (tp_tr_file_name, std::ios::out | std::ios::app);
@@ -137,6 +170,36 @@ TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   auto itr = stats.begin ();
   // current time
   Time curTime = Now ();
+
+
+
+  /////////////////////////////////////////////////////////////
+  // Multi Tracing Thing... creates issues right now...
+  ////////////
+
+  // Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
+  
+  // for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
+  // {
+  //     // Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
+  //     if (i-> first == 1 || i->first == 2)
+  //     { 
+  //       int flow = i->first;  // thr <<  curTime << " " << 8 * (i->second.rxBytes - prevRx) / (1000 * 1000 * (curTime.GetSeconds () - prevRxTime.GetSeconds ())) << std::endl;
+
+  //       std::ofstream thr (tp_tr_file_name + std::to_string(flow), std::ios::out | std::ios::app);
+  //       thr <<  curTime << " " << 8 * (i->second.rxBytes - prevRx[flow]) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
+        
+  //       prevRx[flow] = i->second.rxBytes;
+
+  //     }
+  // }
+
+
+  ////////////
+  // Multi Tracing Thing... creates issues right now...
+  /////////////////////////////////////////////////////////////
+
+
   // ofstream is an output stream class to operate on files
   // bitwise 'or' on either allowing output or appending to a stream
   std::ofstream thr (tp_tr_file_name, std::ios::out | std::ios::app);
