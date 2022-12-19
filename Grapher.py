@@ -111,34 +111,16 @@ def getData(scenario: str):
 
                     data_dict[tcp_ver][type_data][0].append(float(combined))
                     data_dict[tcp_ver][type_data][1].append(float(data_splitdata[1]))
+                elif (type_data == 'routes'):
+                    pass
                 else:
                     print(f"Unsuported data type: {type_data}")
                         
 
-def specificCwnd(s: int):
-    fig, ax = plt.subplots()
-    ax.set_title("CWND")
-    if(s == 0):
-        ax.plot(R_cwnd_time, R_cwnd_values, label='NewReno', color='red')
-    elif(s == 1):
-        ax.plot(B_cwnd_time, B_cwnd_values, label='BBR', color='blue')
-    elif(s == 2):
-        ax.plot(V_cwnd_time, V_cwnd_values, label='Vegas', color='green')
-    else:
-        print("YOU SUCK BRO")
-
-    ax.legend()
-
-    fig.set_size_inches(6.064, 4.445)
-    if (draft_mode):
-        plt.savefig(f'{s}_cwndPlot.png')
-    else: 
-        plt.savefig(f'{s}_cwndPlot.pgf')
-
 def specificPlot(tcp_ver: str, data: str):
     fig, ax = plt.subplots()
     ax.set_title(data.upper())
-    ax.plot(data_dict[tcp_ver][data][0], data_dict[tcp_ver][data][1], label="{}".format(data), color='green')
+    ax.plot(data_dict[tcp_ver][data][0], data_dict[tcp_ver][data][1], label="{}".format(tcp_ver), color='green')
 
     ax.legend()
 
@@ -153,9 +135,9 @@ def plotCWND():
     ax.set_title("CWND")
     ax.set_xlabel("sec", loc='right')
     ax.set_ylabel("CWND", loc='top')
-    ax.plot(R_cwnd_time, R_cwnd_values, label='NewReno', color='red')
-    ax.plot(B_cwnd_time, B_cwnd_values, label='BBR', color='blue')
-    ax.plot(V_cwnd_time, V_cwnd_values, label='Vegas', color='green')
+    ax.plot(data_dict['N']['cwnd'][0], data_dict['N']['cwnd'][1], label='NewReno', color='red')
+    ax.plot(data_dict['B']['cwnd'][0], data_dict['B']['cwnd'][1], label='BBR', color='blue')
+    ax.plot(data_dict['V']['cwnd'][0], data_dict['V']['cwnd'][1], label='Vegas', color='green')
     ax.legend()
 
     fig.set_size_inches(6.064, 4.445)
@@ -170,9 +152,9 @@ def plotRTT():
     ax.set_title("RTT")
     ax.set_xlabel("sec", loc='right')
     ax.set_ylabel("msec", loc='top')
-    ax.plot(R_rtt_time, R_rtt_values, label='NewReno', color='red')
-    ax.plot(B_rtt_time, B_rtt_values, label='BBR', color='blue')
-    ax.plot(V_rtt_time, V_rtt_values, label='Vegas', color='green')
+    ax.plot(data_dict['N']['rtt'][0], data_dict['N']['rtt'][1], label='NewReno', color='red')
+    ax.plot(data_dict['B']['rtt'][0], data_dict['B']['rtt'][1], label='BBR', color='blue')
+    ax.plot(data_dict['V']['rtt'][0], data_dict['V']['rtt'][1], label='Vegas', color='green')
     ax.legend()
     
     fig.set_size_inches(6.064, 4.445)
@@ -185,9 +167,9 @@ def plotRTT():
 def plotTX():
     fig, ax = plt.subplots()
     ax.set_title("TX")
-    ax.plot(R_txtp_time, R_txtp_values, label='NewReno', color='red')
-    ax.plot(B_txtp_time, B_txtp_values, label='BBR', color='blue')
-    ax.plot(V_txtp_time, V_txtp_values, label='Vegas', color='green')
+    ax.plot(data_dict['N']['tx'][0], data_dict['N']['tx'][1], label='NewReno', color='red')
+    ax.plot(data_dict['B']['tx'][0], data_dict['B']['tx'][1], label='BBR', color='blue')
+    ax.plot(data_dict['V']['tx'][0], data_dict['V']['tx'][1], label='Vegas', color='green')
     ax.legend()
 
     fig.set_size_inches(6.064, 4.445)
@@ -200,9 +182,9 @@ def plotTX():
 def plotRX():
     fig, ax = plt.subplots()
     ax.set_title("RX")
-    ax.plot(R_rxtp_time, R_rxtp_values, label='NewReno', color='red')
-    ax.plot(B_rxtp_time, B_rxtp_values, label='BBR', color='blue')
-    ax.plot(V_rxtp_time, V_rxtp_values, label='Vegas', color='green')
+    ax.plot(data_dict['N']['rx'][0], data_dict['N']['rx'][1], label='NewReno', color='red')
+    ax.plot(data_dict['B']['rx'][0], data_dict['B']['rx'][1], label='BBR', color='blue')
+    ax.plot(data_dict['V']['rx'][0], data_dict['V']['rx'][1], label='Vegas', color='green')
     ax.legend()
 
     fig.set_size_inches(6.064, 4.445)
@@ -222,15 +204,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
     draft_mode = True if args.d else False
 
-    #gatherData(args.s)
     getData(args.s)
     os.chdir(org_path+'/figures/'+args.s)
+
+    plotCWND()
+    plotRTT()
+    plotTX()
+    plotRX()
+    
     specificPlot('N', 'cwnd')
-    specificPlot('B', 'rtt')
-    #plotCWND()
-    #plotRTT()
-    #plotTX()
-    #plotRX()
-    #specificCwnd(0)
-    #specificCwnd(1)
-    #specificCwnd(2)
+    specificPlot('B', 'cwnd')
+    specificPlot('V', 'cwnd')
