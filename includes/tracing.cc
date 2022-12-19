@@ -145,7 +145,7 @@ TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
       if (i-> first == 1 || i->first == 2)
       { 
         int flow = i->first;
-        std::ofstream thr (std::to_string(flow) + tp_tr_file_name, std::ios::out | std::ios::app);
+        std::ofstream thr (tp_tr_file_name + std::to_string(flow) , std::ios::out | std::ios::app);
         thr <<  curTime << " " << 8 * (i->second.txBytes - prevTx[flow]) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
         
         prevTx[flow] = i->second.txBytes;
