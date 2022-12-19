@@ -31,16 +31,49 @@
 //  ---------------------------------------
 //  --  Setup of Network Variables  --
 NodeContainer node;
-NodeContainer n0n2;
-NodeContainer n1n2;
-NodeContainer n2n3;
-NodeContainer n3n4;
-NodeContainer n3n5;
-NodeContainer n4n6;
-NodeContainer n5n6;
-NodeContainer n6n7;
+// NodeContainer n0n2;
+// NodeContainer n1n2;
+// NodeContainer n2n3;
+// NodeContainer n3n4;
+// NodeContainer n3n5;
+// NodeContainer n4n6;
+// NodeContainer n5n6;
+// NodeContainer n6n7;
 
 PointToPointHelper p2p;
+
+
+Ptr<PointToPointNetDevice> link_devices[8][2];
+// Ptr<PointToPointNetDevice> d0_link_0_2;
+// Ptr<PointToPointNetDevice> d1_link_0_2;
+// Ptr<PointToPointNetDevice> d0_link_1_2;
+// Ptr<PointToPointNetDevice> d1_link_1_2;
+// Ptr<PointToPointNetDevice> d0_link_2_3;
+// Ptr<PointToPointNetDevice> d1_link_2_3;
+// Ptr<PointToPointNetDevice> d0_link_3_4;
+// Ptr<PointToPointNetDevice> d1_link_3_4;
+// Ptr<PointToPointNetDevice> d0_link_3_5;
+// Ptr<PointToPointNetDevice> d1_link_3_5;
+// Ptr<PointToPointNetDevice> d0_link_4_6;
+// Ptr<PointToPointNetDevice> d1_link_4_6;
+// Ptr<PointToPointNetDevice> d0_link_5_6;
+// Ptr<PointToPointNetDevice> d1_link_5_6;
+// Ptr<PointToPointNetDevice> d0_link_6_7;
+// Ptr<PointToPointNetDevice> d1_link_6_7;
+
+Ptr<PointToPointChannel> link_channel[8];
+// Ptr<PointToPointChannel> link_0_2;
+// Ptr<PointToPointChannel> link_1_2;
+// Ptr<PointToPointChannel> link_2_3;
+// Ptr<PointToPointChannel> link_3_4;
+// Ptr<PointToPointChannel> link_3_5;
+// Ptr<PointToPointChannel> link_4_6;
+// Ptr<PointToPointChannel> link_5_6;
+// Ptr<PointToPointChannel> link_6_7;
+
+
+
+
 
 NetDeviceContainer link_container[8];
 Ipv4InterfaceContainer link_interface[8];
@@ -73,6 +106,70 @@ uint32_t maxBytes = 0;      // 0 means "no limit"
 
 
 
+
+
+
+
+
+
+// Needed for change of delay on links
+PointToPointHelper::PointToPointHelper ()
+{
+  m_queueFactory.SetTypeId ("ns3::DropTailQueue<Packet>");
+  m_deviceFactory.SetTypeId ("ns3::PointToPointNetDevice");
+  m_channelFactory.SetTypeId ("ns3::PointToPointChannel");
+  m_enableFlowControl = true;
+}
+
+// Needed for change of delay on links
+auto
+PointToPointHelper::InstallWithoutContainer(Ptr<Node> a, Ptr<Node> b) {
+
+  Ptr<PointToPointNetDevice> devA = m_deviceFactory.Create<PointToPointNetDevice> ();
+  devA->SetAddress (Mac48Address::Allocate ());
+  a->AddDevice (devA);
+  Ptr<Queue<Packet> > queueA = m_queueFactory.Create<Queue<Packet> > ();
+  devA->SetQueue (queueA);
+  Ptr<PointToPointNetDevice> devB = m_deviceFactory.Create<PointToPointNetDevice> ();
+  devB->SetAddress (Mac48Address::Allocate ());
+  b->AddDevice (devB);
+  Ptr<Queue<Packet> > queueB = m_queueFactory.Create<Queue<Packet> > ();
+  devB->SetQueue (queueB);
+  if (m_enableFlowControl)
+    {
+      // Aggregate NetDeviceQueueInterface objects
+      Ptr<NetDeviceQueueInterface> ndqiA = CreateObject<NetDeviceQueueInterface> ();
+      ndqiA->GetTxQueue (0)->ConnectQueueTraces (queueA);
+      devA->AggregateObject (ndqiA);
+      Ptr<NetDeviceQueueInterface> ndqiB = CreateObject<NetDeviceQueueInterface> ();
+      ndqiB->GetTxQueue (0)->ConnectQueueTraces (queueB);
+      devB->AggregateObject (ndqiB);
+    }
+
+  Ptr<PointToPointChannel> channel = 0;
+  channel = m_channelFactory.Create<PointToPointChannel> ();
+
+  devA->Attach (channel);
+  devB->Attach (channel);
+
+  struct retVals {
+    Ptr<PointToPointNetDevice> i1, i2;
+    Ptr<PointToPointChannel> i3;
+  };
+
+  return retVals {devA, devB, channel};
+  // return netDevVector;
+}
+
+
+
+
+
+
+
+
+
+
 AnimationInterface    // Need to be the XML tracing object, for it to work.
 build_network (string tcp_version, string error)
 {
@@ -97,14 +194,17 @@ build_network (string tcp_version, string error)
   node.Create (8);
 
 
-  n0n2 = NodeContainer (node.Get (0), node.Get (2));    // Nye ende noder
-  n1n2 = NodeContainer (node.Get (1), node.Get (2));    // Nye ende noder
-  n2n3 = NodeContainer (node.Get (2), node.Get (3));    // Gammel n0n1
-  n3n4 = NodeContainer (node.Get (3), node.Get (4));    // Gammel n1n5
-  n3n5 = NodeContainer (node.Get (3), node.Get (5));    // Gammel n1n2
-  n4n6 = NodeContainer (node.Get (4), node.Get (6));    // Gammel n5n3
-  n5n6 = NodeContainer (node.Get (5), node.Get (6));    // Gammel n2n3
-  n6n7 = NodeContainer (node.Get (6), node.Get (7));    // Gammel n3n4
+
+
+  // n0n2 = NodeContainer (node.Get (0), node.Get (2));    // Nye ende noder
+  // n1n2 = NodeContainer (node.Get (1), node.Get (2));    // Nye ende noder
+  // n2n3 = NodeContainer (node.Get (2), node.Get (3));    // Gammel n0n1
+  // n3n4 = NodeContainer (node.Get (3), node.Get (4));    // Gammel n1n5
+  // n3n5 = NodeContainer (node.Get (3), node.Get (5));    // Gammel n1n2
+  // n4n6 = NodeContainer (node.Get (4), node.Get (6));    // Gammel n5n3
+  // n5n6 = NodeContainer (node.Get (5), node.Get (6));    // Gammel n2n3
+  // n6n7 = NodeContainer (node.Get (6), node.Get (7));    // Gammel n3n4
+
 
   MobilityHelper mobility;
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
@@ -113,21 +213,173 @@ build_network (string tcp_version, string error)
   InternetStackHelper internet;
   internet.Install (node);
 
-  // We create the channels first without any IP addressing information
-  NS_LOG_INFO ("Creating channels.");
+  //////////////////////////////
+  //  --  Nyt Setup  --
 
   p2p.SetDeviceAttribute ("DataRate", DataRateValue (defaultDatarate));
   p2p.SetChannelAttribute ("Delay", TimeValue (defaultLinkDelay));
 
+
+  auto [temp_d0_link_0_2, temp_d1_link_0_2, temp_link_0_2] = p2p.InstallWithoutContainer(node.Get(0), node.Get(2));
+
+  auto [temp_d0_link_1_2, temp_d1_link_1_2, temp_link_1_2] = p2p.InstallWithoutContainer(node.Get(1), node.Get(2));
+
+  auto [temp_d0_link_2_3, temp_d1_link_2_3, temp_link_2_3] = p2p.InstallWithoutContainer(node.Get(2), node.Get(3));
+
+  auto [temp_d0_link_3_4, temp_d1_link_3_4, temp_link_3_4] = p2p.InstallWithoutContainer(node.Get(3), node.Get(4));
+
+  auto [temp_d0_link_3_5, temp_d1_link_3_5, temp_link_3_5] = p2p.InstallWithoutContainer(node.Get(3), node.Get(5));
+
+  auto [temp_d0_link_4_6, temp_d1_link_4_6, temp_link_4_6] = p2p.InstallWithoutContainer(node.Get(4), node.Get(6));
+
+  auto [temp_d0_link_5_6, temp_d1_link_5_6, temp_link_5_6] = p2p.InstallWithoutContainer(node.Get(5), node.Get(6));
+
+  auto [temp_d0_link_6_7, temp_d1_link_6_7, temp_link_6_7] = p2p.InstallWithoutContainer(node.Get(6), node.Get(7));
+
+
+
+
+
+  // link_0_2 = temp_link_0_2;
+  // link_1_2 = temp_link_1_2;
+  // link_2_3 = temp_link_2_3;
+  // link_3_4 = temp_link_3_4;
+  // link_3_5 = temp_link_3_5;
+  // link_4_6 = temp_link_4_6;
+  // link_5_6 = temp_link_5_6;
+  // link_6_7 = temp_link_6_7;
+
+
+  link_channel[0] = temp_link_0_2;
+  link_channel[1] = temp_link_1_2;
+  link_channel[2] = temp_link_2_3;
+  link_channel[3] = temp_link_3_4;
+  link_channel[4] = temp_link_3_5;
+  link_channel[5] = temp_link_4_6;
+  link_channel[6] = temp_link_5_6;
+  link_channel[7] = temp_link_6_7;
+
+
+  // d0_link_0_2 = temp_d0_link_0_2;
+  // d1_link_0_2 = temp_d1_link_0_2;
+  // d0_link_1_2 = temp_d0_link_1_2;
+  // d1_link_1_2 = temp_d1_link_1_2;
+  // d0_link_2_3 = temp_d0_link_2_3;
+  // d1_link_2_3 = temp_d1_link_2_3;
+  // d0_link_3_4 = temp_d0_link_3_4;
+  // d1_link_3_4 = temp_d1_link_3_4;
+  // d0_link_3_5 = temp_d0_link_3_5;
+  // d1_link_3_5 = temp_d1_link_3_5;
+  // d0_link_4_6 = temp_d0_link_4_6;
+  // d1_link_4_6 = temp_d1_link_4_6;
+  // d0_link_5_6 = temp_d0_link_5_6;
+  // d1_link_5_6 = temp_d1_link_5_6;
+  // d0_link_6_7 = temp_d0_link_6_7;
+  // d1_link_6_7 = temp_d1_link_6_7;
+
+
+  link_devices[0][0] = temp_d0_link_0_2;
+  link_devices[0][1] = temp_d1_link_0_2;
+  link_devices[1][0] = temp_d0_link_1_2;
+  link_devices[1][1] = temp_d1_link_1_2;
+  link_devices[2][0] = temp_d0_link_2_3;
+  link_devices[2][1] = temp_d1_link_2_3;
+  link_devices[3][0] = temp_d0_link_3_4;
+  link_devices[3][1] = temp_d1_link_3_4;
+  link_devices[4][0] = temp_d0_link_3_5;
+  link_devices[4][1] = temp_d1_link_3_5;
+  link_devices[5][0] = temp_d0_link_4_6;
+  link_devices[5][1] = temp_d1_link_4_6;
+  link_devices[6][0] = temp_d0_link_5_6;
+  link_devices[6][1] = temp_d1_link_5_6;
+  link_devices[7][0] = temp_d0_link_6_7;
+  link_devices[7][1] = temp_d1_link_6_7;
+
+
+  link_channel[0]->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+  link_channel[1]->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+  link_channel[2]->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+  link_channel[3]->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+  link_channel[4]->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+  link_channel[5]->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+  link_channel[6]->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+  link_channel[7]->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+
+
+
+  // link_0_2->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+  // link_1_2->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+  // link_2_3->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+  // link_3_4->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+  // link_3_5->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+  // link_4_6->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+  // link_5_6->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+  // link_6_7->SetAttribute("Delay", StringValue(std::to_string(delay) + "s"));   // Delay is weird and static here...
+
+
+
   // Setup the connection between a net-devices in each end
-  link_container[0] = p2p.Install (n0n2);
-  link_container[1] = p2p.Install (n1n2);
-  link_container[2] = p2p.Install (n2n3);   // Gammel d0d1
-  link_container[3] = p2p.Install (n3n4);   // Gammel d1d5
-  link_container[4] = p2p.Install (n3n5);   // Gammel d1d2
-  link_container[5] = p2p.Install (n4n6);   // Gammel d5d3
-  link_container[6] = p2p.Install (n5n6);   // Gammel d2d3
-  link_container[7] = p2p.Install (n6n7);   // Gammel d3d4
+  // link_container[0].Add(d0_link_0_2);
+  // link_container[0].Add(d1_link_0_2);
+  // link_container[1].Add(d0_link_1_2);
+  // link_container[1].Add(d1_link_1_2);
+  // link_container[2].Add(d0_link_2_3);
+  // link_container[2].Add(d1_link_2_3);
+  // link_container[3].Add(d0_link_3_4);
+  // link_container[3].Add(d1_link_3_4);
+  // link_container[4].Add(d0_link_3_5);
+  // link_container[4].Add(d1_link_3_5);
+  // link_container[5].Add(d0_link_4_6);
+  // link_container[5].Add(d1_link_4_6);
+  // link_container[6].Add(d0_link_5_6);
+  // link_container[6].Add(d1_link_5_6);
+  // link_container[7].Add(d0_link_6_7);
+  // link_container[7].Add(d1_link_6_7);
+
+
+  link_container[0].Add(link_devices[0][0]);
+  link_container[0].Add(link_devices[0][1]);
+  link_container[1].Add(link_devices[1][0]);
+  link_container[1].Add(link_devices[1][1]);
+  link_container[2].Add(link_devices[2][0]);
+  link_container[2].Add(link_devices[2][1]);
+  link_container[3].Add(link_devices[3][0]);
+  link_container[3].Add(link_devices[3][1]);
+  link_container[4].Add(link_devices[4][0]);
+  link_container[4].Add(link_devices[4][1]);
+  link_container[5].Add(link_devices[5][0]);
+  link_container[5].Add(link_devices[5][1]);
+  link_container[6].Add(link_devices[6][0]);
+  link_container[6].Add(link_devices[6][1]);
+  link_container[7].Add(link_devices[7][0]);
+  link_container[7].Add(link_devices[7][1]);
+
+
+
+  //  --  Nyt Setup  --
+  //////////////////////////////
+
+
+
+
+
+
+
+  // We create the channels first without any IP addressing information
+  NS_LOG_INFO ("Creating channels.");
+
+  // p2p.SetDeviceAttribute ("DataRate", DataRateValue (defaultDatarate));
+  // p2p.SetChannelAttribute ("Delay", TimeValue (defaultLinkDelay));
+
+  // // Setup the connection between a net-devices in each end
+  // link_container[0] = p2p.Install (n0n2);
+  // link_container[1] = p2p.Install (n1n2);
+  // link_container[2] = p2p.Install (n2n3);   // Gammel d0d1
+  // link_container[3] = p2p.Install (n3n4);   // Gammel d1d5
+  // link_container[4] = p2p.Install (n3n5);   // Gammel d1d2
+  // link_container[5] = p2p.Install (n4n6);   // Gammel d5d3
+  // link_container[6] = p2p.Install (n5n6);   // Gammel d2d3
+  // link_container[7] = p2p.Install (n6n7);   // Gammel d3d4
 
   //      OBS   OBS   OBS   OBS   OBS
   // --  Stadig ikke sikker på at "Bottleneck'en" bliver opdateret fra run()
@@ -225,4 +477,6 @@ build_network (string tcp_version, string error)
 
   return anim;
 }
+
+
 

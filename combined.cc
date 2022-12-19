@@ -8,7 +8,7 @@ static char const *scenario = "Rerouting";
 
 
 // static std::map<string,bool> config, default_config;
-// static std::map<string,bool> default_config;
+static std::map<string,bool> default_config;
 // static std::map<const char*,bool> default_config;
 // std::map<const char*,bool> default_config["link_error"] = false; 
 // static std::map<string,bool> default_config["link_error"] = false; 
@@ -34,7 +34,7 @@ void printIt(std::map<string,bool> m) {
 
 
 int
-run (string tcp_version, bool link_error = false, std::map<string,bool> config = std::map<string,bool> config["random"] = false)
+run (string tcp_version, bool link_error = false, std::map<string,bool> config = default_config)
 {
   /* --------------------------------------------------------
   //  --    General Setup   --
@@ -189,6 +189,12 @@ run (string tcp_version, bool link_error = false, std::map<string,bool> config =
 int
 main (int argc, char *argv[])
 {
+
+  default_config["link_error"] = false; 
+  default_config["moving"] = false; 
+  default_config["rerouting"] = false; 
+  default_config["congestion"] = false;
+
   /////////////////////////
   // --  Argument Area
   bool verbose = true;
