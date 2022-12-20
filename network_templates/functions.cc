@@ -190,7 +190,7 @@ BulkSendHelper createSource(int nodeId, string tcp_version, Address sink, string
 {
   BulkSendHelper newSource ("ns3::TcpSocketFactory", sink);
   newSource.SetAttribute ("MaxBytes", UintegerValue (datarate));
-  
+
   string node_file = "";
 
   if (nodeId != 0) {
@@ -221,11 +221,11 @@ int setupThroughputTracing(string tcp_version, string error)
 {
   monitor = flowmon.InstallAll ();
   // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceTxThroughput,
-  Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceTxThroughput,
-                       tcp_version + error + "-tx-throughput.data", monitor);
+  Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceConTxThroughput,
+                       tcp_version + error + "-tx-throughput", monitor);
   // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRxThroughput,
-  Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceRxThroughput,
-                       tcp_version + error + "-rx-throughput.data", monitor);
+  Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceConRxThroughput,
+                       tcp_version + error + "-rx-throughput", monitor);
 
   return 1;
 }
@@ -242,7 +242,7 @@ auto setupDefaultNodeTraffic(string tcp_version, string error)
   BulkSendHelper source = createSource(0, tcp_version, sinkAddress, error);
   setupThroughputTracing(tcp_version, error);
 
-  struct retVals {        // Declare a local structure 
+  struct retVals {        // Declare a local structure
     BulkSendHelper src;
     Address add;
   };

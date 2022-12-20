@@ -15,6 +15,16 @@ uint32_t prevTx = 0;    // Earlier values for throughput tracing
 uint32_t prevRx = 0;    // Earlier values for throughput tracing
 Time prevTxTime = Seconds (0);    // Earlier timestamps for throughput tracing
 Time prevRxTime = Seconds (0);    // Earlier timestamps for throughput tracing
+
+uint32_t prevTx1 = 0;    // Earlier values for throughput tracing
+uint32_t prevTx2 = 0;    // Earlier values for throughput tracing
+uint32_t prevRx1 = 0;    // Earlier values for throughput tracing
+uint32_t prevRx2 = 0;    // Earlier values for throughput tracing
+Time prevTx1Time = Seconds (0);    // Earlier timestamps for throughput tracing
+Time prevTx2Time = Seconds (0);    // Earlier timestamps for throughput tracing
+Time prevRx1Time = Seconds (0);    // Earlier timestamps for throughput tracing
+Time prevRx2Time = Seconds (0);    // Earlier timestamps for throughput tracing
+
 FlowMonitorHelper flowmon;    // Not used before network setup
 Ptr<FlowMonitor> monitor;     // Not used before network setup
 
@@ -102,51 +112,7 @@ TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   Time curTime = Now ();
 
 
-  /////////////////////////////////////////////////////////////
-  // Multi Tracing Thing... creates issues right now...
-  ////////////
-
-  // Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
-   
-  // for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
-  // {
-  //     if (i-> first == 1 || i->first == 2)
-  //     { 
-  //       int flow = i->first;
-  //       std::ofstream thr (tp_tr_file_name + std::to_string(flow) , std::ios::out | std::ios::app);
-  //       thr <<  curTime << " " << 8 * (i->second.txBytes - prevTx[flow]) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
-        
-  //       prevTx[flow] = i->second.txBytes;
-
-
-  //     // Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
-  //       // std::cout << "Flow " << i->first  << " (" << t.sourceAddress << " -> " << t.destinationAddress << ")\n";
-  //       // std::cout << "  Tx Packets: " << i->second.txPackets << "\n";
-  //       // std::cout << "  Tx Bytes:   " << i->second.txBytes << "\n";
-  //       // std::cout << "  Rx Bytes:   " << i->second.rxBytes << "\n";
-  //     }
-  // }
-
-
-  ////////////
-  // Multi Tracing Thing... creates issues right now...
-  /////////////////////////////////////////////////////////////
-
-
-  // ofstream is an output stream class to operate on files
-  // bitwise 'or' on either allowing output or appending to a stream
   std::ofstream thr (tp_tr_file_name, std::ios::out | std::ios::app);
-  // write to stream:
-  // current time and
-  // transmitted bytes since last transmission divided by
-  // the time since last transmission
-  // which equals throughput (transmitted data over time)
-
-
-  // NS_LOG_INFO ("Previous TX; " + std::to_string(prevTx));
-  // NS_LOG_INFO ("Combined TX: " + std::to_string(itr->second.txBytes));
-  // int current = itr->second.txBytes - prevTx;
-  // NS_LOG_INFO ("Current TX: " + std::to_string(current) + "\n");
 
 
   // thr <<  curTime << " " << 8 * (current) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
@@ -160,6 +126,32 @@ TraceTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   Simulator::Schedule (Seconds (0.5), &TraceTxThroughput, tp_tr_file_name, monitor);
 }
 
+static void
+TraceConTxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
+{
+  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
+  Time curTime = Now ();
+
+  std::ofstream thr1 (tp_tr_file_name + "-1.data", std::ios::out | std::ios::app);
+  std::ofstream thr2 (tp_tr_file_name + "-2.data", std::ios::out | std::ios::app);
+
+  Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
+
+  for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
+    {
+      if (i->first == 1) {
+        thr1 << curTime << " " << 8 * (i->second.txBytes - prevTx1) / (1000 * 1000 * (curTime.GetSeconds () - prevTx1Time.GetSeconds ())) << std::endl;
+        prevTx1Time = curTime;
+        prevTx1 = i->second.txBytes;
+      } else if (i->first == 2) {
+        thr2 << curTime << " " << 8 * (i->second.txBytes - prevTx2) / (1000 * 1000 * (curTime.GetSeconds () - prevTx2Time.GetSeconds ())) << std::endl;
+        prevTx2Time = curTime;
+        prevTx2 = i->second.txBytes;
+      }
+    }
+
+  Simulator::Schedule (Seconds (0.5), &TraceConTxThroughput, tp_tr_file_name, monitor);
+}
 
 static void
 TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
@@ -171,54 +163,41 @@ TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
   // current time
   Time curTime = Now ();
 
-
-
-  /////////////////////////////////////////////////////////////
-  // Multi Tracing Thing... creates issues right now...
-  ////////////
-
-  // Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
-  
-  // for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
-  // {
-  //     // Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
-  //     if (i-> first == 1 || i->first == 2)
-  //     { 
-  //       int flow = i->first;  // thr <<  curTime << " " << 8 * (i->second.rxBytes - prevRx) / (1000 * 1000 * (curTime.GetSeconds () - prevRxTime.GetSeconds ())) << std::endl;
-
-  //       std::ofstream thr (tp_tr_file_name + std::to_string(flow), std::ios::out | std::ios::app);
-  //       thr <<  curTime << " " << 8 * (i->second.rxBytes - prevRx[flow]) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
-        
-  //       prevRx[flow] = i->second.rxBytes;
-
-  //     }
-  // }
-
-
-  ////////////
-  // Multi Tracing Thing... creates issues right now...
-  /////////////////////////////////////////////////////////////
-
-
-  // ofstream is an output stream class to operate on files
-  // bitwise 'or' on either allowing output or appending to a stream
   std::ofstream thr (tp_tr_file_name, std::ios::out | std::ios::app);
-  // write to stream:
-  // current time and
-  // transmitted bytes since last transmission divided by
-  // the time since last transmission
-  // which equals throughput (transmitted data over time)
+
   thr <<  curTime << " " << 8 * (itr->second.rxBytes - prevRx) / (1000 * 1000 * (curTime.GetSeconds () - prevRxTime.GetSeconds ())) << std::endl;
 
-  // thr <<  curTime << " " << itr->second.rxBytes << " " << prev  << std::endl;
-  //<< i->second.rxBytes * 8.0 / simulationEndTime.GetSeconds () / 1000 / 1000  << " Mbps\n";
-  // current time and current transmitted bytes which for next iteration becomes 'previous'
   prevRxTime = curTime;
   prevRx = itr->second.rxBytes;
-  // recursive call every x seconds
 
-  // Simulator::Schedule (Seconds (throughputTraceInterval), &TraceRxThroughput, tp_tr_file_name, monitor);
   Simulator::Schedule (Seconds (0.5), &TraceRxThroughput, tp_tr_file_name, monitor);
+}
+
+static void
+TraceConRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
+{
+  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
+  Time curTime = Now ();
+
+  std::ofstream thr1 (tp_tr_file_name + "-1.data", std::ios::out | std::ios::app);
+  std::ofstream thr2 (tp_tr_file_name + "-2.data", std::ios::out | std::ios::app);
+
+  Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
+
+  for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
+    {
+      if (i->first == 1) {
+        thr1 << curTime << " " << 8 * (i->second.rxBytes - prevRx1) / (1000 * 1000 * (curTime.GetSeconds () - prevRx1Time.GetSeconds ())) << std::endl;
+        prevRx1Time = curTime;
+        prevRx1 = i->second.rxBytes;
+      } else if (i->first == 2) {
+        thr2 << curTime << " " << 8 * (i->second.rxBytes - prevRx2) / (1000 * 1000 * (curTime.GetSeconds () - prevRx2Time.GetSeconds ())) << std::endl;
+        prevRx2Time = curTime;
+        prevRx2 = i->second.rxBytes;
+      }
+    }
+
+  Simulator::Schedule (Seconds (0.5), &TraceConRxThroughput, tp_tr_file_name, monitor);
 }
 
 
@@ -239,15 +218,20 @@ int emptyTraceFiles(string tcp_version, string error)
 
 int resetTracingVars()
 {
-  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();   // Pull out current package stats
-  // stats = monitor->GetFlowStats ();   // Pull out current package stats
-  auto itr = stats.begin ();
-
   //  NS-3 doesn't reset these variables, so set to the final state
-  prevTx = itr->second.txBytes;
-  prevRx = itr->second.rxBytes;
-  prevTxTime = Now ();
-  prevRxTime = Now ();
+  prevTx = 0;    // Earlier values for throughput tracing
+  prevRx = 0;    // Earlier values for throughput tracing
+  prevTxTime = Now ();    // Earlier timestamps for throughput tracing
+  prevRxTime = Now ();    // Earlier timestamps for throughput tracing
+
+  prevTx1 = 0;
+  prevTx2 = 0;
+  prevRx1 = 0;
+  prevRx2 = 0;
+  prevTx1Time = Now ();
+  prevTx2Time = Now ();
+  prevRx1Time = Now ();
+  prevRx2Time = Now ();
 
   return 1;
 }
