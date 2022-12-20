@@ -7,43 +7,25 @@ static char const *scenario = "Rerouting";
 #include "network_templates/functions.cc"
 
 
-// static std::map<string,bool> config, default_config;
-
-// static std::map<const char*,bool> default_config;
-// std::map<const char*,bool> default_config["link_error"] = false; 
-// static std::map<string,bool> default_config["link_error"] = false; 
-// static std::map<string,bool> default_config["moving"] = false; 
-// static std::map<string,bool> default_config["rerouting"] = false; 
-// static std::map<string,bool> default_config["congestion"] = false;
-
-// default_config["link_error"] = false; 
-// default_config["moving"] = false; 
-// default_config["rerouting"] = false; 
-// default_config["congestion"] = false;
-
-
-// void printIt(std::map<int,int> m) {
-// void printIt(std::map<string,int> m) {
 void printIt(std::map<string,bool> m) {
-    // for(std::map<int,int>::iterator it=m.begin();it!=m.end();++it)
-    // for(std::map<string,int>::iterator it=m.begin();it!=m.end();++it)
     cout << "Configuration is: " << std::endl; 
-    cout << "simulation time: " << end_time << std::endl;
+    cout << "    simulation time: " << end_time << " seconds" << std::endl;
     for(std::map<string,bool>::iterator it=m.begin();it!=m.end();++it)
-        cout << it->first<<": "<<it->second<< std::endl;
+        cout << "    " << it->first<<": "<<it->second<< std::endl;
     cout << "\n";
 }
 
 
 int
-// run (string tcp_version, bool link_error = false, std::map<string,bool> config = default_config)
 run (string tcp_version, std::map<string,bool> config = default_config)
-// run (string tcp_version, bool link_error = false)
 {
   /* --------------------------------------------------------
   //  --    General Setup   --
   //  --  DON'T TOUCH THIS!  --
   */
+
+  cout << "\n________________________________________ \n________________________________________ \nPreparing for Simulation Using TCP " << tcp_version << std::endl;
+  // NS_LOG_INFO ("\n________________________________________ \n________________________________________ \nPreparing for Simulation Using TCP " + tcp_version + ".\n" );
 
   config.insert(default_config.begin(), default_config.end());    // config takes presidence here.
 
@@ -68,8 +50,7 @@ run (string tcp_version, std::map<string,bool> config = default_config)
   printIt(config);
 
   string error_str = "";
-  string error_activated_str = "";
-  // if ( link_error ) {   // If packetdrop on rerouting is enabled
+
   if ( (config["link_error"] == true)  && (config["rerouting"] == true) ) {   // If packetdrop on rerouting is enabled
     error_str = "-error";
   }
@@ -96,6 +77,11 @@ run (string tcp_version, std::map<string,bool> config = default_config)
   NS_LOG_INFO ("Creating Applications.");
 
 
+
+  //  ---------------------------------------------
+  //  --  Dynamic Link Scenario Setup  --
+  //  ------------
+
   if ( config["moving"] == true) {   // If moving satellites is enabled
 
     if (config["rerouting"] == true) {
@@ -121,11 +107,12 @@ run (string tcp_version, std::map<string,bool> config = default_config)
       ScheduleDataRateAndDelay(6);
       ScheduleDataRateAndDelay(7);
     }
-
-
-
   }
 
+
+  //  ---------------------------------------------
+  //  --  Rerouting Scenario Setup  --
+  //  ------------
 
   if ( config["rerouting"] == true) {   // If moving satellites is enabled
     float first_reroute_time = start_time + 100.07;
@@ -133,16 +120,16 @@ run (string tcp_version, std::map<string,bool> config = default_config)
 
     if (config["moving"] == true) {
       first_reroute_time = start_time + 712.007;
-      second_reroute_time = start_time + 1500.007;
+      second_reroute_time = start_time + 1500.007; // After the simulation... set here because we only need one
     }
 
 
     // Get node 6 and its ipv4, to prepare changing route
-    Ptr<Node> n3 = node.Get (6);   // Grap third node (before forking)
-    Ptr<Ipv4> n3ipv4 = n3->GetObject<Ipv4> ();
+    Ptr<Node> n6 = node.Get (6);   // Grap third node (before forking)
+    Ptr<Ipv4> n6ipv4 = n6->GetObject<Ipv4> ();
     // The first interfaceIndex is 0 for loopback, then the first p2p connection is numbered 1, numbered by order of creation.
-    uint32_t n3_to_n4_connection = 1;    // Connection index between node 3 & 4
-    uint32_t n3_to_n5_connection = 2;    // Connection index between node 3 & 5
+    uint32_t n4_to_n6_connection = 1;    // Connection index between node 3 & 4
+    uint32_t n5_to_n6_connection = 2;    // Connection index between node 3 & 5
 
 
 
@@ -150,18 +137,18 @@ run (string tcp_version, std::map<string,bool> config = default_config)
     //  --  Simulation Rerouting Scheduling  --
 
     // SetDown & SetUp opens and closes that specific connection.
-    Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n3ipv4, n3_to_n4_connection);
+    Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n6ipv4, n4_to_n6_connection);
     
-    Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n4_connection);
-    Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
+    Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetUp, n6ipv4, n4_to_n6_connection);
+    Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetDown, n6ipv4, n5_to_n6_connection);
 
     if ( config["link_error"] == true ) {   // If packetdrop on rerouting is enabled
       linkDrops(6, first_reroute_time, true);
     }
 
     // Rorouting again
-    Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n5_connection);
-    Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n4_connection);
+    Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetUp, n6ipv4, n5_to_n6_connection);
+    Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetDown, n6ipv4, n4_to_n6_connection);
 
     if ( config["link_error"] == true ) {   // If packetdrop on rerouting is enabled
       linkDrops(5, second_reroute_time, true);
@@ -172,14 +159,18 @@ run (string tcp_version, std::map<string,bool> config = default_config)
 
     //  --  For usage in "prints"  --
     if ( config["link_error"] == true ) {   // If packetdrop on rerouting is enabled
-      error_activated_str = "Rerouting has dropped packets on route change.";
+      NS_LOG_INFO ("Rerouting has dropped packets on route change.");
     }
     else {
-      error_activated_str = "Rerouting has dropped packets on route change.";
+      NS_LOG_INFO ("Rerouting don't drop packets on route change.");
     }
 
   }
 
+
+  //  ---------------------------------------------
+  //  --  Congestion Scenario Setup  --
+  //  ------------
 
   if ( config["congestion"] == true) {   // If moving satellites is enabled
     int new_sink_node = 1;   // Link, not node... see network template scematic
@@ -197,8 +188,6 @@ run (string tcp_version, std::map<string,bool> config = default_config)
 
   
 
-
-
   /*
   //        /\     /\     /\     /\
   //       /  \   /  \   /  \   /  \
@@ -211,49 +200,17 @@ run (string tcp_version, std::map<string,bool> config = default_config)
    --------------------------------------------------------*/
 
 
-  NS_LOG_INFO ("\n________________________________________\nStarting Simulation Using TCP " + tcp_version + ".\n" + error_activated_str );
+  NS_LOG_INFO ("\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\nStarting Simulation Using TCP " + tcp_version + ".\n" );
   Simulator::Stop(simulationEndTime);
-  Simulator::Run ();
-
-  // monitor->CheckForLostPackets ();
-  // Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
-  // FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
-
-  // //std::ostringstream os;
-
-  // for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
-  //   {
-  //     Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
-
-  //     std::cout << "Flow " << i->first  << " (" << t.sourceAddress << " -> " << t.destinationAddress << ")\n";
-  //     std::cout << "  Tx Packets: " << i->second.txPackets << "\n";
-  //     std::cout << "  Tx Bytes:   " << i->second.txBytes << "\n";
-  //     std::cout << "  TxOffered:  " << i->second.txBytes * 8.0 / simulationEndTime.GetSeconds () / 1000 / 1000  << " Mbps\n";
-  //     std::cout << "  Rx Packets: " << i->second.rxPackets << "\n";
-  //     std::cout << "  Rx Bytes:   " << i->second.rxBytes << "\n";
-  //     std::cout << "  Throughput: " << i->second.rxBytes * 8.0 / simulationEndTime.GetSeconds () / 1000 / 1000  << " Mbps\n";
-  //     //i->second.flowInterruptionsHistogram.SerializeToXmlStream(os, 2, "flowInterruptionsHistogram");
-  //     //std::cout << "  Flow Interruptions Histogram:\n" << i->second.flowInterruptionsHistogram << "\n------------------\n";
-  //   }
-
-  // auto itr = stats.begin ();  
-  
+  Simulator::Run ();  
   Simulator::Destroy ();
   NS_LOG_INFO ("Simulation Done.");
 
 
   /////////////////////////////////////////////////
   //  --  Prepare variables for another run  --
-  (&node)->~NodeContainer();
-  new (&node) NodeContainer();
-
-  // Ptr<PointToPointNetDevice> link_devices[8][2];
-  // Ptr<PointToPointChannel> link_channel[8];
-  // NetDeviceContainer link_container[8];
-  // Ipv4InterfaceContainer link_interface[8];
-
-
-  resetTracingVars();   // Prepare for next TCP version simulation
+  resetContainers();
+  resetTracingVars();
 
   return 1;
 }
@@ -268,7 +225,7 @@ main (int argc, char *argv[])
   default_config["link_error"] = false; 
   default_config["congestion"] = false;
 
-  /////////////////////////
+  ///////////////////////////
   // --  Argument Area
   bool verbose = true;
   uint32_t nCsma = 3;
@@ -289,14 +246,22 @@ main (int argc, char *argv[])
 
   std::map<string,bool> conf { 
                           // {"link_error", true},
-                          // {"rerouting", true},
-                          {"congestion", true}, 
-                          {"moving", true}
+                          {"rerouting", true},
+                          // {"congestion", true}, 
+                          // {"moving", true}
                         };
 
 
   run("Bbr", conf);
-  // run("NewReno", conf);
-  // run("Vegas", conf);
+  run("NewReno", conf);
+  run("Vegas", conf);
+
+  if (conf["link_error"] == true ) {  // Turn if off, and run without
+
+    conf["link_error"] = false;
+    run("Bbr", conf);
+    run("NewReno", conf);
+    run("Vegas", conf);
+  }
 
 }

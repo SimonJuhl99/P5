@@ -287,14 +287,26 @@ int linkDrops(int linkId, float time, bool state)
   return 1;
 }
 
-// int resetContainers()
-// {  
-//   (&node)->~NodeContainer();
-//   new (&node) NodeContainer();
-//   (&link_container)->~NetDeviceContainer();
-//   new (&link_container) NetDeviceContainer();
-//   (&link_interface)->~Ipv4InterfaceContainer();
-//   new (&link_interface) Ipv4InterfaceContainer();
+int resetContainers()
+{  
+  (&node)->~NodeContainer();
+  new (&node) NodeContainer();
+  
+  for (int i = 0; i < 8; ++i) {
+    (&link_devices[i][1])->~Ptr<PointToPointNetDevice>();
+    new (&link_devices[i][1]) Ptr<PointToPointNetDevice>();
+    (&link_devices[i][2])->~Ptr<PointToPointNetDevice>();
+    new (&link_devices[i][2]) Ptr<PointToPointNetDevice>();
 
-//   return 1;
-// }
+    (&link_channel[i])->~Ptr<PointToPointChannel>();
+    new (&link_channel[i]) Ptr<PointToPointChannel>();
+
+    (&link_container[i])->~NetDeviceContainer();
+    new (&link_container[i]) NetDeviceContainer();
+
+    (&link_interface[i])->~Ipv4InterfaceContainer();
+    new (&link_interface[i]) Ipv4InterfaceContainer();
+  }
+
+  return 1;
+}
