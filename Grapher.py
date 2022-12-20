@@ -11,57 +11,12 @@ mpl.rcParams.update({
 import matplotlib.pyplot as plt
 import numpy as np
 
+from initializeArrays import *
+
 org_path = os.getcwd()
 data_path = "../output_files/"
 draft_mode = False
 
-N_cwnd_time = []
-N_cwnd_values = []
-N_rtt_time = []
-N_rtt_values = []
-N_tx_time = []
-N_tx_values = []
-N_rx_time = []
-N_rx_values = []
-
-B_cwnd_time = []
-B_cwnd_values = []
-B_rtt_time = []
-B_rtt_values = []
-B_tx_time = []
-B_tx_values = []
-B_rx_time = []
-B_rx_values = []
-
-V_cwnd_time = []
-V_cwnd_values = []
-V_rtt_time = []
-V_rtt_values = []
-V_tx_time = []
-V_tx_values = []
-V_rx_time = []
-V_rx_values = []
-
-data_dict = {
-    'N' : {
-        'cwnd' : [N_cwnd_time, N_cwnd_values],
-        'rtt' : [N_rtt_time, N_rtt_values],
-        'tx' : [N_tx_time, N_tx_values],
-        'rx' : [N_rx_time, N_rx_values],
-    },
-    'B' : {
-        'cwnd' : [B_cwnd_time, B_cwnd_values],
-        'rtt' : [B_rtt_time, B_rtt_values],
-        'tx' : [B_tx_time, B_tx_values],
-        'rx' : [B_rx_time, B_rx_values],
-    },
-    'V' : {
-        'cwnd' : [V_cwnd_time, V_cwnd_values],
-        'rtt' : [V_rtt_time, V_rtt_values],
-        'tx' : [V_tx_time, V_tx_values],
-        'rx' : [V_rx_time, V_rx_values],
-    }
-}
 
 def getData(scenario: str):
     file_path = data_path + scenario
@@ -69,10 +24,11 @@ def getData(scenario: str):
 
     files = os.listdir('.')
     files = [f for f in files if f.endswith(".data")]
+    print(f"Gathering data from the following files: {files}")
  
     for data_file in files:
         tmp = data_file.split('-')
-        tcp_ver = tmp[0][0]
+        tcp_ver = tmp[0]
         type_data = tmp[1].split('.')[0]
         with open(data_file, 'r') as f:
             for i in f.read().splitlines():
@@ -115,14 +71,24 @@ def getData(scenario: str):
                     pass
                 else:
                     print(f"Unsuported data type: {type_data}")
+                    break
                         
 
 def specificPlot(tcp_ver: str, data: str):
-    fig, ax = plt.subplots()
+    if (tcp_ver == 'NewReno'):
+        color='red'
+    elif (tcp_ver == 'Bbr'):
+        color = 'blue'
+    elif (tcp_ver == 'Vegas'):
+        color = 'green'
+    else:
+        print(f'Unsuported tcp version: {tcp_ver}')
+        
+    fig, ax = plt.subplots(layout='constrained')
     ax.set_title(data.upper())
-    ax.plot(data_dict[tcp_ver][data][0], data_dict[tcp_ver][data][1], label="{}".format(tcp_ver), color='green')
+    ax.plot(data_dict[tcp_ver][data][0], data_dict[tcp_ver][data][1], label="{}".format(tcp_ver), color=color)
 
-    ax.legend()
+    ax.legend(bbox_to_anchor=(1,0), loc='lower left')
 
     fig.set_size_inches(6.064, 4.445)
     if (draft_mode):
@@ -131,14 +97,14 @@ def specificPlot(tcp_ver: str, data: str):
         plt.savefig(f'{tcp_ver}-{data}.pgf')
         
 def plotCWND():
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(layout='constrained')
     ax.set_title("CWND")
     ax.set_xlabel("sec", loc='right')
-    ax.set_ylabel("CWND", loc='top')
-    ax.plot(data_dict['N']['cwnd'][0], data_dict['N']['cwnd'][1], label='NewReno', color='red')
-    ax.plot(data_dict['B']['cwnd'][0], data_dict['B']['cwnd'][1], label='BBR', color='blue')
-    ax.plot(data_dict['V']['cwnd'][0], data_dict['V']['cwnd'][1], label='Vegas', color='green')
-    ax.legend()
+    ax.set_ylabel("B", loc='top')
+    ax.plot(data_dict['NewReno']['cwnd'][0], data_dict['NewReno']['cwnd'][1], label='NewReno', color='red')
+    ax.plot(data_dict['Bbr']['cwnd'][0], data_dict['Bbr']['cwnd'][1], label='BBR', color='blue')
+    ax.plot(data_dict['Vegas']['cwnd'][0], data_dict['Vegas']['cwnd'][1], label='Vegas', color='green')
+    ax.legend(bbox_to_anchor=(1,0), loc='lower left')
 
     fig.set_size_inches(6.064, 4.445)
     if (draft_mode):
@@ -148,14 +114,14 @@ def plotCWND():
 
 
 def plotRTT():
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(layout='constrained')
     ax.set_title("RTT")
     ax.set_xlabel("sec", loc='right')
-    ax.set_ylabel("msec", loc='top')
-    ax.plot(data_dict['N']['rtt'][0], data_dict['N']['rtt'][1], label='NewReno', color='red')
-    ax.plot(data_dict['B']['rtt'][0], data_dict['B']['rtt'][1], label='BBR', color='blue')
-    ax.plot(data_dict['V']['rtt'][0], data_dict['V']['rtt'][1], label='Vegas', color='green')
-    ax.legend()
+    ax.set_ylabel("sec", loc='top')
+    ax.plot(data_dict['NewReno']['rtt'][0], data_dict['NewReno']['rtt'][1], label='NewReno', color='red')
+    ax.plot(data_dict['Bbr']['rtt'][0], data_dict['Bbr']['rtt'][1], label='BBR', color='blue')
+    ax.plot(data_dict['Vegas']['rtt'][0], data_dict['Vegas']['rtt'][1], label='Vegas', color='green')
+    ax.legend(bbox_to_anchor=(1,0), loc='lower left')
     
     fig.set_size_inches(6.064, 4.445)
     if (draft_mode):
@@ -165,12 +131,14 @@ def plotRTT():
 
 
 def plotTX():
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(layout='constrained')
     ax.set_title("TX")
-    ax.plot(data_dict['N']['tx'][0], data_dict['N']['tx'][1], label='NewReno', color='red')
-    ax.plot(data_dict['B']['tx'][0], data_dict['B']['tx'][1], label='BBR', color='blue')
-    ax.plot(data_dict['V']['tx'][0], data_dict['V']['tx'][1], label='Vegas', color='green')
-    ax.legend()
+    ax.set_xlabel("sec", loc='right')
+    ax.set_ylabel("Mb/s", loc='top')
+    ax.plot(data_dict['NewReno']['tx'][0], data_dict['NewReno']['tx'][1], label='NewReno', color='red')
+    ax.plot(data_dict['Bbr']['tx'][0], data_dict['Bbr']['tx'][1], label='BBR', color='blue')
+    ax.plot(data_dict['Vegas']['tx'][0], data_dict['Vegas']['tx'][1], label='Vegas', color='green')
+    ax.legend(bbox_to_anchor=(1,0), loc='lower left')
 
     fig.set_size_inches(6.064, 4.445)
     if (draft_mode):
@@ -180,12 +148,14 @@ def plotTX():
 
 
 def plotRX():
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(layout='constrained')
     ax.set_title("RX")
-    ax.plot(data_dict['N']['rx'][0], data_dict['N']['rx'][1], label='NewReno', color='red')
-    ax.plot(data_dict['B']['rx'][0], data_dict['B']['rx'][1], label='BBR', color='blue')
-    ax.plot(data_dict['V']['rx'][0], data_dict['V']['rx'][1], label='Vegas', color='green')
-    ax.legend()
+    ax.set_xlabel("sec", loc='right')
+    ax.set_ylabel("Mb/s", loc='top')
+    ax.plot(data_dict['NewReno']['rx'][0], data_dict['NewReno']['rx'][1], label='NewReno', color='red')
+    ax.plot(data_dict['Bbr']['rx'][0], data_dict['Bbr']['rx'][1], label='BBR', color='blue')
+    ax.plot(data_dict['Vegas']['rx'][0], data_dict['Vegas']['rx'][1], label='Vegas', color='green')
+    ax.legend(bbox_to_anchor=(1,0), loc='lower left')
 
     fig.set_size_inches(6.064, 4.445)
     if (draft_mode):
@@ -212,6 +182,20 @@ if __name__ == '__main__':
     plotTX()
     plotRX()
     
-    specificPlot('N', 'cwnd')
-    specificPlot('B', 'cwnd')
-    specificPlot('V', 'cwnd')
+    specificPlot('NewReno', 'cwnd')
+    specificPlot('Bbr', 'cwnd')
+    specificPlot('Vegas', 'cwnd')
+
+    specificPlot('NewReno', 'rtt')
+    specificPlot('Bbr', 'rtt')
+    specificPlot('Vegas', 'rtt')
+
+    specificPlot('NewReno', 'rx')
+    specificPlot('Bbr', 'rx')
+    specificPlot('Vegas', 'rx')
+
+    specificPlot('NewReno', 'tx')
+    specificPlot('Bbr', 'tx')
+    specificPlot('Vegas', 'tx')
+
+    

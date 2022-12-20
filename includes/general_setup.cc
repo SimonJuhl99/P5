@@ -36,9 +36,9 @@ int start_time = 0;
 
 // int end_time = start_time + 20;
 // int end_time = start_time + 80;
-// int end_time = start_time + 240;    // Maybe our "optimal" sim-time
+int end_time = start_time + 240;    // Maybe our "optimal" sim-time
 // int end_time = start_time + 700;
-int end_time = start_time + 772;
+// int end_time = start_time + 772;
 Time simulationEndTime = Seconds (end_time);     // Set simulation time
 int source_start_time = 0;
 
@@ -57,11 +57,14 @@ int source_start_time = 0;
 
 //  --  Average Satellite Data  --
 
+static int scale = 1000;
+// int realDataRate = 500;
+// float scaledDatarate = realDataRate / scale;
+// DataRate defaultDatarate( std::to_string(scaledDatarate) + "Mbps");     // DataRate scaled 1000, so is 0.5Mbps
 DataRate defaultDatarate("0.5Mbps");     // DataRate scaled 1000
 // DataRate defaultDatarate("5Mbps");     // DataRate scaled 100
 float delay = 0.025;
 // Time defaultLinkDelay = MilliSeconds (25);
-static int scale = 1000;
 
 
 // Throughput Trace Interval
@@ -70,3 +73,4 @@ static int scale = 1000;
 
 
 CommandLine cmd (__FILE__);         // NEW THING
+static std::map<string,bool> default_config;

@@ -218,39 +218,12 @@ build_network (string tcp_version, string error)
   internet.Install (node);
 
 
+  // cout << "Original Datarate was: " << DataRate("0.5Mbps") << std::endl;
+  // cout << "defaultDatarate is set to: " << defaultDatarate << std::endl;
 
   p2p.SetDeviceAttribute ("DataRate", DataRateValue (defaultDatarate));
   // p2p.SetChannelAttribute ("Delay", TimeValue (defaultLinkDelay));
 
-  /////////////////////////////
-  // New version....
-
-
-  // createLink(0, 2, 0);
-  // createLink(1, 2, 1);
-  // createLink(2, 3, 2);
-  // createLink(3, 4, 3);
-  // createLink(3, 5, 4);
-  // createLink(4, 6, 5);
-  // createLink(5, 6, 6);
-  // createLink(6, 7, 7);
-
-  // p2p.InstallWithoutContainer(0, 2);
-  // p2p.InstallWithoutContainer(1, 2);
-  // p2p.InstallWithoutContainer(2, 3);
-  // p2p.InstallWithoutContainer(3, 4);
-  // p2p.InstallWithoutContainer(3, 5);
-  // p2p.InstallWithoutContainer(4, 6);
-  // p2p.InstallWithoutContainer(5, 6);
-  // p2p.InstallWithoutContainer(6, 7);
-
-
-  // New version....
-  /////////////////////////////
-
-
-  /////////////////////////////
-  // Old version....
 
   auto [temp_d0_link_0_2, temp_d1_link_0_2, temp_link_0_2] = p2p.InstallWithoutContainer(node.Get(0), node.Get(2));
 
@@ -296,9 +269,6 @@ build_network (string tcp_version, string error)
   link_devices[7][0] = temp_d0_link_6_7;
   link_devices[7][1] = temp_d1_link_6_7;
 
-
-  // Old version....
-  /////////////////////////////
 
   // NS_LOG_INFO("Setting Delays:");
 

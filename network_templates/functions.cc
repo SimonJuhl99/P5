@@ -120,7 +120,8 @@ ScheduleDataRateAndDelay(int link_id, int shift = 0, bool oppo = true)
   double prop_delay;
 
   // std::cout << std::stoi(parallel_dr_arr[1268]) << " yo" << "\n";
-  for(int i = 0; i < arr_len ; i++) {
+  for(int i = 0; i < end_time ; i++) {
+    // cout << "Index in loop is: " << ((i + shift) % arr_len) << std::endl;
     if (oppo) {
       int_converted_dr_vals = std::stoi(oppo_dr_arr[(i + shift) % arr_len]);
       prop_delay = (double)std::stoi(oppo_dist_arr[(i + shift) % arr_len]) / (double)speed_of_light;
@@ -184,7 +185,7 @@ BulkSendHelper createSource(int nodeId, string tcp_version, Address sink, string
 {
   BulkSendHelper newSource ("ns3::TcpSocketFactory", sink);
   newSource.SetAttribute ("MaxBytes", UintegerValue (datarate));
-  
+
   string node_file = "";
 
   if (nodeId != 0) {
@@ -216,10 +217,24 @@ int setupThroughputTracing(string tcp_version, string error)
   monitor = flowmon.InstallAll ();
   // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceTxThroughput,
   Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceTxThroughput,
-                       tcp_version + "-tx-throughput" + error + ".data", monitor);
+                       tcp_version + "-tx-throughput" + error, monitor);
   // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRxThroughput,
   Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceRxThroughput,
-                       tcp_version + "-rx-throughput" + error + ".data", monitor);
+                       tcp_version + "-rx-throughput" + error, monitor);
+
+  return 1;
+}
+
+
+int setupConThroughputTracing(string tcp_version, string error)
+{
+  monitor = flowmon.InstallAll ();
+
+  Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceConTxThroughput,
+                       tcp_version + "-tx-throughput" + error, monitor);
+
+  Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceConRxThroughput,
+                       tcp_version + "-rx-throughput" + error, monitor);
 
   return 1;
 }
@@ -228,7 +243,7 @@ int setupThroughputTracing(string tcp_version, string error)
 
 
 
-auto setupDefaultNodeTraffic(string tcp_version, string error)
+auto setupDefaultNodeTraffic(string tcp_version, string error, std::map<string,bool> config = default_config )
 // int setupDefaultNodeTraffic(string tcp_version)
 {
   emptyTraceFiles(tcp_version, error);
@@ -238,9 +253,15 @@ auto setupDefaultNodeTraffic(string tcp_version, string error)
 
 
   BulkSendHelper source = createSource(0, tcp_version, sinkAddress, error);
-  setupThroughputTracing(tcp_version, error);
 
-  struct retVals {        // Declare a local structure 
+  if ( config["congestion"] == true ) {
+    setupConThroughputTracing(tcp_version, error);
+  }
+  else {
+    setupThroughputTracing(tcp_version, error);
+  }
+
+  struct retVals {        // Declare a local structure
     BulkSendHelper src;
     Address add;
   };
