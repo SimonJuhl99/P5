@@ -4,36 +4,8 @@ static char const *scenario = "Rerouting";
 #include "includes/general_setup.cc"
 #include "includes/tracing.cc"
 #include "network_templates/8.cc"
+// #include "network_templates/8_new.cc"
 #include "network_templates/functions.cc"
-
-
-
-/*
-
-Inside the Point-to-Point Helper file at:
-  "ns-3.36.1/src/point-to-point/helper/point-to-point-helper.h"
-at the "public" part (line 46 - 197) insert the line:
-  "auto InstallWithoutContainer(Ptr<Node> a, Ptr<Node> b);"
-
-
-
-WILL ONLY WORK IF you
-
-1. open src/point-to-point/model/point-to-point-channel.cc and create the following method:
-
-void
-PointToPointChannel::SetDelay (Time const &time)
-{
-  m_delay = time;
-}
-
-2. afterwards go to src/point-to-point/model/point-to-point-channel.h and add
-the following line to the public methods
-
-void SetDelay (Time const &time);
-
-*/
-
 
 
 
@@ -67,35 +39,9 @@ run (string tcp_version, bool link_error = false)
   */
 
 
-  // end_time = start_time + 772;
-  // simulationEndTime = Seconds (end_time);     // Set simulation time
-  // sinkApp.Stop ( simulationEndTime );
-  // sourceApp.Stop ( simulationEndTime );
 
 
-
-  // param: netdevice, netdevice, channel, oppo_data = true, shifted_start
-  // ScheduleDataRateAndDelay(d0_link_0_2, d1_link_0_2, link_0_2, true, 0);
-  // ScheduleDataRateAndDelay(d0_link_0_2, d1_link_0_2, link_channel[0], true, 0);
-  // ScheduleDataRateAndDelay(link_devices[0][0],link_devices[0][1], link_channel[0], true, 0);
- 
- 
-  ScheduleDataRateAndDelay(0);
-  ScheduleDataRateAndDelay(1);
-  ScheduleDataRateAndDelay(2);
-  ScheduleDataRateAndDelay(3);
-  ScheduleDataRateAndDelay(4);
-  ScheduleDataRateAndDelay(5);
-  ScheduleDataRateAndDelay(6);
-  ScheduleDataRateAndDelay(7);
-
-
-
-  // ScheduleDataRateAndDelay(1, 5);
-  // ScheduleDataRateAndDelay(2, 0, false);
-  // ScheduleDataRateAndDelay(d2, d3, channel2, true, 0);
-
-  // Simulator::Schedule (Seconds (1), &ChangeDataRate, channel, 0.342);
+  // NOTHING HERE... THIS IS THE IDEAL NO BULLSHIT EXAMPLE
   
 
 
@@ -146,17 +92,7 @@ run (string tcp_version, bool link_error = false)
   //  --  Prepare variables for another run  --
   (&node)->~NodeContainer();
   new (&node) NodeContainer();
-  (link_container)->~NetDeviceContainer();
-  new (link_container) NetDeviceContainer();
-  (link_interface)->~Ipv4InterfaceContainer();
-  new (link_interface) Ipv4InterfaceContainer();
   resetTracingVars();   // Prepare for next TCP version simulation
-
-
-  // Ptr<PointToPointNetDevice> link_devices[8][2];
-  // Ptr<PointToPointChannel> link_channel[8];
-  // NetDeviceContainer link_container[8];
-  // Ipv4InterfaceContainer link_interface[8];
 
   return 1;
 }

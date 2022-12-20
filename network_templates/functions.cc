@@ -51,10 +51,6 @@ void
 // ScheduleDataRateAndDelay(Ptr<PointToPointNetDevice> d0, Ptr<PointToPointNetDevice> d1, Ptr<PointToPointChannel> c, bool oppo, int shift)
 ScheduleDataRateAndDelay(int link_id, int shift = 0, bool oppo = true)
 {
-  // Ptr<PointToPointNetDevice> d0 = link_devices[link_id][0];
-  // Ptr<PointToPointNetDevice> d1 = link_devices[link_id][1];
-  // Ptr<PointToPointChannel> c = link_channel[link_id];
-
 
   // NS_LOG_INFO("Inde i Delay-dims");
   uint32_t speed_of_light = 299792458;
@@ -70,7 +66,6 @@ ScheduleDataRateAndDelay(int link_id, int shift = 0, bool oppo = true)
   std::string mystring;
   std::fstream myfile;
 
-  // NS_LOG_INFO("Før Israel Data");
   ///////////////////////////////////////
   // Find path to P5 folder !!!!
 
@@ -99,8 +94,6 @@ ScheduleDataRateAndDelay(int link_id, int shift = 0, bool oppo = true)
     myfile.open( path + "parallel.data");     // FILE PARSING HERE!!
   }
 
-  // NS_LOG_INFO("Efter Israel Data");
-
   int i = 0;
   std::vector<std::string> v;
 
@@ -123,14 +116,11 @@ ScheduleDataRateAndDelay(int link_id, int shift = 0, bool oppo = true)
     myfile.close();
   }
 
-  // NS_LOG_INFO("Filling arrays");
-
   int int_converted_dr_vals;
   double prop_delay;
 
   // std::cout << std::stoi(parallel_dr_arr[1268]) << " yo" << "\n";
   for(int i = 0; i < arr_len ; i++) {
-    // NS_LOG_INFO("Function done.");
     if (oppo) {
       int_converted_dr_vals = std::stoi(oppo_dr_arr[(i + shift) % arr_len]);
       prop_delay = (double)std::stoi(oppo_dist_arr[(i + shift) % arr_len]) / (double)speed_of_light;
@@ -141,39 +131,43 @@ ScheduleDataRateAndDelay(int link_id, int shift = 0, bool oppo = true)
     // int int_converted_dr_vals = std::stoi(oppo_dr_arr[i]);
     // double prop_delay = (double)std::stoi(oppo_dist_arr[i]) / (double)speed_of_light;
     double megabits_per_sec = (double)int_converted_dr_vals / (double)1000000;
-    double scaled_datarate = megabits_per_sec / 1000.0;
-    // Simulator::Schedule (Seconds (i), &ChangeDataRate, d0, d1, c, scaled_datarate);
+    // double scaled_datarate = megabits_per_sec / 1000.0;
+    // cout << "Scale is: " << (double)scale << std::endl; 
+    double scaled_datarate = megabits_per_sec / (double)scale;
     Simulator::Schedule (Seconds (i), &ChangeDataRate, link_devices[link_id][0], link_devices[link_id][1], link_channel[link_id], scaled_datarate);
-    // Simulator::Schedule (Seconds (i), &ChangePropDelay, c, prop_delay);
     Simulator::Schedule (Seconds (i), &ChangePropDelay, link_channel[link_id], prop_delay);
   }
-
-
-  // NS_LOG_INFO("Function done.");
 
 }
 
 
 static void
 ActivateError(Ptr<NetDevice> d, bool activate)
-{
+{  
+  
+  // NS_LOG_INFO("Inside ActivateError, functions - line 148");
+
   Ptr<RateErrorModel> errorFree = CreateObject<RateErrorModel> ();
   Ptr<RateErrorModel> error = CreateObject<RateErrorModel> ();
   // an error rate of 1 means that error percentage is 100%
+  // NS_LOG_INFO("Inside ActivateError, functions - line 153");
   errorFree->SetAttribute ("ErrorRate", DoubleValue (0));
   error->SetAttribute ("ErrorRate", DoubleValue (1));
   // if activate is true set error percentage to 100%
+  // NS_LOG_INFO("Inside ActivateError, functions - line 157");
   if (activate) {
+    // NS_LOG_INFO("Inside ActivateError, functions - line 159");
     d->SetAttribute ("ReceiveErrorModel", PointerValue (error));
   } else {
+    // NS_LOG_INFO("Inside ActivateError, functions - line 162");
     d->SetAttribute ("ReceiveErrorModel", PointerValue (errorFree));
   }
 }
 
-Address createSink(int nodeId, string tcp_version, int device_id = 1, int port = 8080)
+Address createSink(int nodeId, int linkId, string tcp_version, int device_id = 1, int port = 8080)
 // Address createSink(int nodeId, string tcp_version, int port = 8080)
 {
-  Address newSinkAddress ( InetSocketAddress ( link_interface[nodeId].GetAddress(device_id), port ) );     // setup sink interface on node 7
+  Address newSinkAddress ( InetSocketAddress ( link_interface[linkId].GetAddress(device_id), port ) );     // setup sink interface on node 7
   // Address newSinkAddress ( InetSocketAddress ( port ) );     // setup sink interface on node 7
   PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress ( Ipv4Address::GetAny (), port ) );
 
@@ -209,10 +203,10 @@ BulkSendHelper createSource(int nodeId, string tcp_version, Address sink, string
   // Setup tracing for RTT, Congestion Window and Transmitted Data
   // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceCwnd,
   Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceCwnd,
-                       tcp_version + node_file + error + "-cwnd.data", nodeId);
+                       tcp_version + "-cwnd" + node_file + error + ".data", nodeId);
   // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRtt,
   Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceRtt,
-                       tcp_version + node_file + error + "-rtt.data", nodeId);
+                       tcp_version + "-rtt" + node_file + error + ".data", nodeId);
 
   return newSource;
 }
@@ -222,10 +216,10 @@ int setupThroughputTracing(string tcp_version, string error)
   monitor = flowmon.InstallAll ();
   // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceTxThroughput,
   Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceTxThroughput,
-                       tcp_version + error + "-tx-throughput.data", monitor);
+                       tcp_version + "-tx-throughput" + error + ".data", monitor);
   // Simulator::Schedule (Seconds (start_time + 0.00001), &TraceRxThroughput,
   Simulator::Schedule (Seconds (source_start_time + 0.00001), &TraceRxThroughput,
-                       tcp_version + error + "-rx-throughput.data", monitor);
+                       tcp_version + "-rx-throughput" + error + ".data", monitor);
 
   return 1;
 }
@@ -238,7 +232,11 @@ auto setupDefaultNodeTraffic(string tcp_version, string error)
 // int setupDefaultNodeTraffic(string tcp_version)
 {
   emptyTraceFiles(tcp_version, error);
-  Address sinkAddress = createSink(7, tcp_version);
+  Address sinkAddress = createSink(7, 7, tcp_version);
+
+  // Address sinkAddress = createSink(5, 4, tcp_version);
+
+
   BulkSendHelper source = createSource(0, tcp_version, sinkAddress, error);
   setupThroughputTracing(tcp_version, error);
 
@@ -252,10 +250,30 @@ auto setupDefaultNodeTraffic(string tcp_version, string error)
   // return {source, sinkAddress};
 }
 
-int linkDrops(int nodeId, float time, bool state)
+int linkDrops(int linkId, float time, bool state)
 {
-    Simulator::Schedule (Seconds (time), &ActivateError, link_container[nodeId+2].Get (0), state);
-    Simulator::Schedule (Seconds (time), &ActivateError, link_container[nodeId].Get (1), state);
+  // NS_LOG_INFO("Inside linkDrop, functions - line 255");
 
-    return 1;
+  //   linkDrops(3, second_reroute_time, true);
+
+  Simulator::Schedule (Seconds (time), &ActivateError, link_container[linkId].Get (1), state);
+  Simulator::Schedule (Seconds (time), &ActivateError, link_container[linkId].Get (0), state);
+  // Simulator::Schedule (Seconds (time), &ActivateError, link_container[nodeId+2].Get (0), state);
+
+
+  // link_container[]  skal være  Ptr<NetDevice>
+
+  return 1;
 }
+
+// int resetContainers()
+// {  
+//   (&node)->~NodeContainer();
+//   new (&node) NodeContainer();
+//   (&link_container)->~NetDeviceContainer();
+//   new (&link_container) NetDeviceContainer();
+//   (&link_interface)->~Ipv4InterfaceContainer();
+//   new (&link_interface) Ipv4InterfaceContainer();
+
+//   return 1;
+// }

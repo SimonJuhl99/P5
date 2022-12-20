@@ -34,26 +34,16 @@ void printIt(std::map<string,bool> m) {
 
 
 int
-run (string tcp_version, bool link_error = false, std::map<string,bool> config = default_config)
+// run (string tcp_version, bool link_error = false, std::map<string,bool> config = default_config)
+run (string tcp_version, std::map<string,bool> config = default_config)
+// run (string tcp_version, bool link_error = false)
 {
   /* --------------------------------------------------------
   //  --    General Setup   --
   //  --  DON'T TOUCH THIS!  --
   */
-  std::map<int,int> config, default_config;
-  // config[1] = 11; config[2] = 12; config[3] = 13;
-  // default_config[2] = 20; default_config[3] = 30; default_config[4] = 40;
 
-  default_config["link_error"] = false; 
-  default_config["moving"] = false; 
-  default_config["rerouting"] = false; 
-  default_config["congestion"] = false;
-
-  // config["link_error"] = false; config["rerouting"] = true; config["congestion"] = true;
-  
-  if (config != NULL){
-    config.insert(default_config.begin(), default_config.end());    // config takes presidence here.
-  }
+  config.insert(default_config.begin(), default_config.end());    // config takes presidence here.
 
 
 
@@ -62,7 +52,8 @@ run (string tcp_version, bool link_error = false, std::map<string,bool> config =
 
   string error_str = "";
   string error_activated_str = "";
-  if (link_error) {   // If packetdrop on rerouting is enabled
+  // if ( link_error ) {   // If packetdrop on rerouting is enabled
+  if ( (config["link_error"] == true)  && (config["rerouting"] == true) ) {   // If packetdrop on rerouting is enabled
     error_str = "-error";
   }
 
@@ -88,49 +79,84 @@ run (string tcp_version, bool link_error = false, std::map<string,bool> config =
   NS_LOG_INFO ("Creating Applications.");
 
 
-  // Get node 3 and its ipv4, to prepare changing route
-  Ptr<Node> n3 = node.Get (3);   // Grap third node (before forking)
-  Ptr<Ipv4> n3ipv4 = n3->GetObject<Ipv4> ();
-  // The first interfaceIndex is 0 for loopback, then the first p2p connection is numbered 1, numbered by order of creation.
-  uint32_t n3_to_n4_connection = 2;    // Connection index between node 3 & 4
-  uint32_t n3_to_n5_connection = 3;    // Connection index between node 3 & 5
+  if ( config["moving"] == true) {   // If moving satellites is enabled
+    ScheduleDataRateAndDelay(0);
+    ScheduleDataRateAndDelay(1);
+    ScheduleDataRateAndDelay(2);
+    ScheduleDataRateAndDelay(3);
+    ScheduleDataRateAndDelay(4);
+    ScheduleDataRateAndDelay(5);
+    ScheduleDataRateAndDelay(6);
+    ScheduleDataRateAndDelay(7);
 
-
-
-
-  //  ---------------------------------------
-  //  --  Simulation Rerouting Scheduling  --
-
-  float first_reroute_time = start_time + 6.007;
-  float second_reroute_time = start_time + 15.007;
-
-  // SetDown & SetUp opens and closes that specific connection.
-  Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n3ipv4, n3_to_n4_connection);
-  Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n4_connection);
-  Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
-
-  if (link_error) {   // If packetdrop on rerouting is enabled
-    linkDrops(4, first_reroute_time, true);
-  }
-
-  // Rorouting again
-  Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n5_connection);
-  Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
-
-  if (link_error) {   // If packetdrop on rerouting is enabled
-    linkDrops(3, second_reroute_time, true);
-    linkDrops(4, second_reroute_time, false);
   }
 
 
+  if ( config["rerouting"] == true) {   // If moving satellites is enabled
+    
+    float first_reroute_time = start_time + 250.007;
+    float second_reroute_time = start_time + 500.007;
 
-  //  --  For usage in "prints"  --
-  if (link_error) {   // If packetdrop on rerouting is enabled
-    error_activated_str = "With dropped packets on route change.";
+    // Get node 6 and its ipv4, to prepare changing route
+    Ptr<Node> n3 = node.Get (6);   // Grap third node (before forking)
+    Ptr<Ipv4> n3ipv4 = n3->GetObject<Ipv4> ();
+    // The first interfaceIndex is 0 for loopback, then the first p2p connection is numbered 1, numbered by order of creation.
+    uint32_t n3_to_n4_connection = 1;    // Connection index between node 3 & 4
+    uint32_t n3_to_n5_connection = 2;    // Connection index between node 3 & 5
+
+
+
+    //  ---------------------------------------
+    //  --  Simulation Rerouting Scheduling  --
+
+    // SetDown & SetUp opens and closes that specific connection.
+    Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n3ipv4, n3_to_n4_connection);
+    
+    Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n4_connection);
+    Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
+
+    if ( config["link_error"] == true ) {   // If packetdrop on rerouting is enabled
+      linkDrops(6, first_reroute_time, true);
+    }
+
+    // Rorouting again
+    Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n5_connection);
+    Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n4_connection);
+
+    if ( config["link_error"] == true ) {   // If packetdrop on rerouting is enabled
+      linkDrops(5, second_reroute_time, true);
+      linkDrops(6, second_reroute_time, false);
+    }
+
+
+
+    //  --  For usage in "prints"  --
+    if ( config["link_error"] == true ) {   // If packetdrop on rerouting is enabled
+      error_activated_str = "Rerouting has dropped packets on route change.";
+    }
+    else {
+      error_activated_str = "Rerouting has dropped packets on route change.";
+    }
+
   }
-  else {
-    error_activated_str = "Without dropped packets on route change.";
+
+
+  if ( config["congestion"] == true) {   // If moving satellites is enabled
+    int new_sink_node = 1;   // Link, not node... see network template scematic
+    int new_sink_link = 1;   // Link, not node... see network template scematic
+    int new_source = 5;   // Link, not node... see network template scematic
+
+    Address sink2 = createSink(new_sink_node, new_sink_link, tcp_version, 0);
+    BulkSendHelper source2 = createSource(new_source, tcp_version, sink2, error_str);
+
+    sourceApp.Start ( Seconds ( source_start_time ) );
+    sourceApp.Stop ( simulationEndTime );
+
   }
+
+
+  
+
 
 
   /*
@@ -214,11 +240,16 @@ main (int argc, char *argv[])
   //  ----------------------------------
   //  Actual Script Running Section
 
-  run("Bbr");
-  run("Bbr", true);
-  run("NewReno");
-  run("NewReno", true);
-  run("Vegas");
-  run("Vegas", true);
+  std::map<string,bool> conf { 
+                          // {"link_error", true},
+                          {"rerouting", true},
+                          // {"congestion", true}, 
+                          {"moving", true}
+                        };
+
+
+  run("Bbr", conf);
+  // run("NewReno", conf);
+  // run("Vegas", conf);
 
 }

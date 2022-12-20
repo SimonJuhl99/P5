@@ -222,13 +222,20 @@ TraceRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
 }
 
 
-int emptyTraceFiles(string tcp_version, string error)
+int emptyTraceFiles(string tcp_version, string error, int extra_node = -1)
 {
 
-  std::ofstream rtt (tcp_version + error + "-rtt.data", std::ios::out);
-  std::ofstream cwnd (tcp_version + error + "-cwnd.data", std::ios::out);
-  std::ofstream in (tcp_version + error + "-rx-throughput.data", std::ios::out);
-  std::ofstream out (tcp_version + error + "-tx-throughput.data", std::ios::out);
+  if (extra_node > 0) {
+    string node_file = "-" + std::to_string(extra_node);
+
+    std::ofstream rtt (tcp_version + "-rtt" + node_file + error + ".data", std::ios::out);
+    std::ofstream cwnd (tcp_version + "-cwnd" + node_file + error + ".data", std::ios::out);
+  }
+
+  std::ofstream rtt (tcp_version + "-rtt" + error + ".data", std::ios::out);
+  std::ofstream cwnd (tcp_version + "-cwnd" + error + ".data", std::ios::out);
+  std::ofstream in (tcp_version + "-rx-throughput" + error + ".data", std::ios::out);
+  std::ofstream out (tcp_version + "-tx-throughput" + error + ".data", std::ios::out);
   rtt <<  "";
   cwnd <<  "";
   in <<  "";

@@ -42,10 +42,11 @@ run (string tcp_version, bool link_error = false)
 
 
 
-  int new_sink = 1;   // Link, not node... see network template scematic
+  int new_sink_node = 1;   // Link, not node... see network template scematic
+  int new_sink_link = 1;   // Link, not node... see network template scematic
   int new_source = 5;   // Link, not node... see network template scematic
 
-  Address sink2 = createSink(new_sink, tcp_version, 0);
+  Address sink2 = createSink(new_sink_node, new_sink_link, tcp_version, 0);
   BulkSendHelper source2 = createSource(new_source, tcp_version, sink2, error_str);
 
   sourceApp.Start ( Seconds ( source_start_time ) );
@@ -80,6 +81,10 @@ run (string tcp_version, bool link_error = false)
   //  --  Prepare variables for another run  --
   (&node)->~NodeContainer();
   new (&node) NodeContainer();
+  (link_container)->~NetDeviceContainer();
+  new (link_container) NetDeviceContainer();
+  (link_interface)->~Ipv4InterfaceContainer();
+  new (link_interface) Ipv4InterfaceContainer();
   resetTracingVars();   // Prepare for next TCP version simulation
 
   return 1;
@@ -110,7 +115,7 @@ main (int argc, char *argv[])
 
   // run("Bbr");
   run("NewReno");
-  // run("Vegas");
+  run("Vegas");
 
 }
 

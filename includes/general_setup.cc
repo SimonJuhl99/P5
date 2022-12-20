@@ -33,20 +33,36 @@ NS_LOG_COMPONENT_DEFINE (scenario);
 
 // Simulation Time Setup
 int start_time = 0;
+
+// int end_time = start_time + 20;
+// int end_time = start_time + 80;
 // int end_time = start_time + 240;    // Maybe our "optimal" sim-time
-int end_time = start_time + 30;
 // int end_time = start_time + 700;
+int end_time = start_time + 772;
 Time simulationEndTime = Seconds (end_time);     // Set simulation time
 int source_start_time = 0;
 
 
+//  --  Random Own Setup  --
+
 // Set Default Network Speeds
-DataRate defaultDatarate("8Mbps");
-// DataRate defaultDatarate("0.5Mbps");
-// float delay = 0.025;
-float delay = 0.005;
+// DataRate defaultDatarate("8Mbps");
+// float delay = 0.005;
+// Time defaultLinkDelay = MilliSeconds (5);
+// float delay = 0.022;
+// Time defaultLinkDelay = MilliSeconds (15);
+
+
+
+
+//  --  Average Satellite Data  --
+
+DataRate defaultDatarate("0.5Mbps");     // DataRate scaled 1000
+// DataRate defaultDatarate("5Mbps");     // DataRate scaled 100
+float delay = 0.025;
 // Time defaultLinkDelay = MilliSeconds (25);
-Time defaultLinkDelay = MilliSeconds (5);
+static int scale = 1000;
+
 
 // Throughput Trace Interval
 // int throughputTraceInterval = 0.05;

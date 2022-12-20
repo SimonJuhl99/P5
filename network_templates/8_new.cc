@@ -34,8 +34,13 @@ NodeContainer node;
 
 PointToPointHelper p2p;
 
-Ptr<PointToPointNetDevice> link_devices[8][2];
-Ptr<PointToPointChannel> link_channel[8];
+
+PointToPointNetDevice link_devices[8][2];
+PointToPointChannel link_channel[8];
+
+
+// Ptr<PointToPointNetDevice> link_devices[8][2];
+// Ptr<PointToPointChannel> link_channel[8];
 NetDeviceContainer link_container[8];
 Ipv4InterfaceContainer link_interface[8];
 
@@ -92,8 +97,8 @@ PointToPointHelper::PointToPointHelper ()
 
 
 // Needed for change of delay on links
-// int PointToPointHelper::InstallWithoutContainer(int node_a, int node_b)
-auto PointToPointHelper::InstallWithoutContainer(Ptr<Node> a, Ptr<Node> b) 
+int PointToPointHelper::InstallWithoutContainer(int node_a, int node_b)
+// auto PointToPointHelper::InstallWithoutContainer(Ptr<Node> a, Ptr<Node> b) 
 {
 
   Ptr<PointToPointNetDevice> devA = m_deviceFactory.Create<PointToPointNetDevice> ();
@@ -104,16 +109,19 @@ auto PointToPointHelper::InstallWithoutContainer(Ptr<Node> a, Ptr<Node> b)
   /////////////////////////////
   // New version....
 
+  NodeContainer a = node.Get(node_a);
+  NodeContainer b = node.Get(node_b);
   // Ptr<Node> a = node.Get(node_a);
   // Ptr<Node> b = node.Get(node_b);
 
   // New version....
   /////////////////////////////
 
-
+  // Device 1 Setup
   a->AddDevice (devA);
   Ptr<Queue<Packet> > queueA = m_queueFactory.Create<Queue<Packet> > ();
   devA->SetQueue (queueA);
+  // Device 2 Setup
   Ptr<PointToPointNetDevice> devB = m_deviceFactory.Create<PointToPointNetDevice> ();
   devB->SetAddress (Mac48Address::Allocate ());
   b->AddDevice (devB);
@@ -136,23 +144,22 @@ auto PointToPointHelper::InstallWithoutContainer(Ptr<Node> a, Ptr<Node> b)
   devA->Attach (channel);
   devB->Attach (channel);
 
-  struct retVals {
-    Ptr<PointToPointNetDevice> i1, i2;
-    Ptr<PointToPointChannel> i3;
-  };
+
 
 
   /////////////////////////////
   // New version....
 
-  // NS_LOG_INFO("Current Link Channel is " + std::to_string(current_link));
-  // NS_LOG_INFO("Current Link Nodes are " + std::to_string(current_node_a) + " and " + std::to_string(current_node_b));
+  NS_LOG_INFO("Current Link Channel is " + std::to_string(current_link));
+  NS_LOG_INFO("Current Link Nodes are " + std::to_string(current_node_a) + " and " + std::to_string(current_node_b));
 
-  // link_devices[current_link][current_node_a] = devA;
-  // link_devices[current_link][current_node_b] = devB;
-  // link_channel[current_link] = channel;
+  link_devices[current_link][current_node_a] = devA;
+  link_devices[current_link][current_node_b] = devB;
+  link_channel[current_link] = channel;
 
-  // return 1;
+  current_link++;
+
+  return 1;
 
   // New version....
   /////////////////////////////
@@ -161,7 +168,12 @@ auto PointToPointHelper::InstallWithoutContainer(Ptr<Node> a, Ptr<Node> b)
   /////////////////////////////
   // Old version....
 
-  return retVals {devA, devB, channel};
+  // struct retVals {
+  //   Ptr<PointToPointNetDevice> i1, i2;
+  //   Ptr<PointToPointChannel> i3;
+  // };
+
+  // return retVals {devA, devB, channel};
 }
 
 
@@ -235,14 +247,14 @@ build_network (string tcp_version, string error)
   // createLink(5, 6, 6);
   // createLink(6, 7, 7);
 
-  // p2p.InstallWithoutContainer(0, 2);
-  // p2p.InstallWithoutContainer(1, 2);
-  // p2p.InstallWithoutContainer(2, 3);
-  // p2p.InstallWithoutContainer(3, 4);
-  // p2p.InstallWithoutContainer(3, 5);
-  // p2p.InstallWithoutContainer(4, 6);
-  // p2p.InstallWithoutContainer(5, 6);
-  // p2p.InstallWithoutContainer(6, 7);
+  p2p.InstallWithoutContainer(0, 2);
+  p2p.InstallWithoutContainer(1, 2);
+  p2p.InstallWithoutContainer(2, 3);
+  p2p.InstallWithoutContainer(3, 4);
+  p2p.InstallWithoutContainer(3, 5);
+  p2p.InstallWithoutContainer(4, 6);
+  p2p.InstallWithoutContainer(5, 6);
+  p2p.InstallWithoutContainer(6, 7);
 
 
   // New version....
@@ -252,49 +264,49 @@ build_network (string tcp_version, string error)
   /////////////////////////////
   // Old version....
 
-  auto [temp_d0_link_0_2, temp_d1_link_0_2, temp_link_0_2] = p2p.InstallWithoutContainer(node.Get(0), node.Get(2));
+  // auto [temp_d0_link_0_2, temp_d1_link_0_2, temp_link_0_2] = p2p.InstallWithoutContainer(node.Get(0), node.Get(2));
 
-  auto [temp_d0_link_1_2, temp_d1_link_1_2, temp_link_1_2] = p2p.InstallWithoutContainer(node.Get(1), node.Get(2));
+  // auto [temp_d0_link_1_2, temp_d1_link_1_2, temp_link_1_2] = p2p.InstallWithoutContainer(node.Get(1), node.Get(2));
 
-  auto [temp_d0_link_2_3, temp_d1_link_2_3, temp_link_2_3] = p2p.InstallWithoutContainer(node.Get(2), node.Get(3));
+  // auto [temp_d0_link_2_3, temp_d1_link_2_3, temp_link_2_3] = p2p.InstallWithoutContainer(node.Get(2), node.Get(3));
 
-  auto [temp_d0_link_3_4, temp_d1_link_3_4, temp_link_3_4] = p2p.InstallWithoutContainer(node.Get(3), node.Get(4));
+  // auto [temp_d0_link_3_4, temp_d1_link_3_4, temp_link_3_4] = p2p.InstallWithoutContainer(node.Get(3), node.Get(4));
 
-  auto [temp_d0_link_3_5, temp_d1_link_3_5, temp_link_3_5] = p2p.InstallWithoutContainer(node.Get(3), node.Get(5));
+  // auto [temp_d0_link_3_5, temp_d1_link_3_5, temp_link_3_5] = p2p.InstallWithoutContainer(node.Get(3), node.Get(5));
 
-  auto [temp_d0_link_4_6, temp_d1_link_4_6, temp_link_4_6] = p2p.InstallWithoutContainer(node.Get(4), node.Get(6));
+  // auto [temp_d0_link_4_6, temp_d1_link_4_6, temp_link_4_6] = p2p.InstallWithoutContainer(node.Get(4), node.Get(6));
 
-  auto [temp_d0_link_5_6, temp_d1_link_5_6, temp_link_5_6] = p2p.InstallWithoutContainer(node.Get(5), node.Get(6));
+  // auto [temp_d0_link_5_6, temp_d1_link_5_6, temp_link_5_6] = p2p.InstallWithoutContainer(node.Get(5), node.Get(6));
 
-  auto [temp_d0_link_6_7, temp_d1_link_6_7, temp_link_6_7] = p2p.InstallWithoutContainer(node.Get(6), node.Get(7));
-
-
-  link_channel[0] = temp_link_0_2;
-  link_channel[1] = temp_link_1_2;
-  link_channel[2] = temp_link_2_3;
-  link_channel[3] = temp_link_3_4;
-  link_channel[4] = temp_link_3_5;
-  link_channel[5] = temp_link_4_6;
-  link_channel[6] = temp_link_5_6;
-  link_channel[7] = temp_link_6_7;
+  // auto [temp_d0_link_6_7, temp_d1_link_6_7, temp_link_6_7] = p2p.InstallWithoutContainer(node.Get(6), node.Get(7));
 
 
-  link_devices[0][0] = temp_d0_link_0_2;
-  link_devices[0][1] = temp_d1_link_0_2;
-  link_devices[1][0] = temp_d0_link_1_2;
-  link_devices[1][1] = temp_d1_link_1_2;
-  link_devices[2][0] = temp_d0_link_2_3;
-  link_devices[2][1] = temp_d1_link_2_3;
-  link_devices[3][0] = temp_d0_link_3_4;
-  link_devices[3][1] = temp_d1_link_3_4;
-  link_devices[4][0] = temp_d0_link_3_5;
-  link_devices[4][1] = temp_d1_link_3_5;
-  link_devices[5][0] = temp_d0_link_4_6;
-  link_devices[5][1] = temp_d1_link_4_6;
-  link_devices[6][0] = temp_d0_link_5_6;
-  link_devices[6][1] = temp_d1_link_5_6;
-  link_devices[7][0] = temp_d0_link_6_7;
-  link_devices[7][1] = temp_d1_link_6_7;
+  // link_channel[0] = temp_link_0_2;
+  // link_channel[1] = temp_link_1_2;
+  // link_channel[2] = temp_link_2_3;
+  // link_channel[3] = temp_link_3_4;
+  // link_channel[4] = temp_link_3_5;
+  // link_channel[5] = temp_link_4_6;
+  // link_channel[6] = temp_link_5_6;
+  // link_channel[7] = temp_link_6_7;
+
+
+  // link_devices[0][0] = temp_d0_link_0_2;
+  // link_devices[0][1] = temp_d1_link_0_2;
+  // link_devices[1][0] = temp_d0_link_1_2;
+  // link_devices[1][1] = temp_d1_link_1_2;
+  // link_devices[2][0] = temp_d0_link_2_3;
+  // link_devices[2][1] = temp_d1_link_2_3;
+  // link_devices[3][0] = temp_d0_link_3_4;
+  // link_devices[3][1] = temp_d1_link_3_4;
+  // link_devices[4][0] = temp_d0_link_3_5;
+  // link_devices[4][1] = temp_d1_link_3_5;
+  // link_devices[5][0] = temp_d0_link_4_6;
+  // link_devices[5][1] = temp_d1_link_4_6;
+  // link_devices[6][0] = temp_d0_link_5_6;
+  // link_devices[6][1] = temp_d1_link_5_6;
+  // link_devices[7][0] = temp_d0_link_6_7;
+  // link_devices[7][1] = temp_d1_link_6_7;
 
 
   // Old version....

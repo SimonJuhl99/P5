@@ -7,14 +7,6 @@ static char const *scenario = "Rerouting";
 #include "network_templates/functions.cc"
 
 
-// int changeDelay(int link, int delay = 5){
-//   Time newDelay = MilliSeconds (delay);
-//   p2p.SetChannelAttribute ("Delay", TimeValue (newDelay));
-//   link_container[link] = p2p.Install (n5n6);   // Gammel d2d3
-
-//   return 1;
-// }
-
 
 int
 run (string tcp_version, bool link_error = false)
@@ -46,6 +38,14 @@ run (string tcp_version, bool link_error = false)
   */
 
 
+  float first_reroute_time = start_time + 250.007;
+  float second_reroute_time = start_time + 500.007;
+
+
+  // float first_reroute_time = start_time + 6.07;
+  // float second_reroute_time = start_time + 15.07;
+
+
   // Create bottleneck in one of the links
 
   // DataRate bottleneckBandwidth ("1Mbps");
@@ -62,22 +62,55 @@ run (string tcp_version, bool link_error = false)
   NS_LOG_INFO ("Creating Applications.");
 
 
+  ///////////////////////////////////////
+  // Node 3 "Down" Version
+  //////////
+
+  // // Get node 3 and its ipv4, to prepare changing route
+  // Ptr<Node> n3 = node.Get (3);   // Grap third node (before forking)
+  // Ptr<Ipv4> n3ipv4 = n3->GetObject<Ipv4> ();
+  // // The first interfaceIndex is 0 for loopback, then the first p2p connection is numbered 1, numbered by order of creation.
+  // uint32_t n3_to_n4_connection = 2;    // Connection index between node 3 & 4
+  // uint32_t n3_to_n5_connection = 3;    // Connection index between node 3 & 5
+
+  // // SetDown & SetUp opens and closes that specific connection.
+  // Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n3ipv4, n3_to_n4_connection);
+  
+  // Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n4_connection);
+  // Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
+
+  // if (link_error) {   // If packetdrop on rerouting is enabled
+  //   linkDrops(4, first_reroute_time, true);
+  // }
+
+  // // Rorouting again
+  // Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n5_connection);
+  // Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n4_connection);
+
+  // if (link_error) {   // If packetdrop on rerouting is enabled
+  //   linkDrops(3, second_reroute_time, true);
+  //   linkDrops(4, second_reroute_time, false);
+  // }
+
+
+
+
+
+  ///////////////////////////////////////
+  // Node 6 "Down" Version
+  //////////
+
   // Get node 3 and its ipv4, to prepare changing route
-  Ptr<Node> n3 = node.Get (3);   // Grap third node (before forking)
+  Ptr<Node> n3 = node.Get (6);   // Grap third node (before forking)
   Ptr<Ipv4> n3ipv4 = n3->GetObject<Ipv4> ();
   // The first interfaceIndex is 0 for loopback, then the first p2p connection is numbered 1, numbered by order of creation.
-  uint32_t n3_to_n4_connection = 2;    // Connection index between node 3 & 4
-  uint32_t n3_to_n5_connection = 3;    // Connection index between node 3 & 5
-
+  uint32_t n3_to_n4_connection = 1;    // Connection index between node 3 & 4
+  uint32_t n3_to_n5_connection = 2;    // Connection index between node 3 & 5
 
 
 
   //  ---------------------------------------
   //  --  Simulation Rerouting Scheduling  --
-
-  float first_reroute_time = start_time + 6.007;
-  float second_reroute_time = start_time + 15.007;
-
 
   // SetDown & SetUp opens and closes that specific connection.
   Simulator::Schedule (Seconds (start_time + 0.00001), &Ipv4::SetDown, n3ipv4, n3_to_n4_connection);
@@ -86,16 +119,16 @@ run (string tcp_version, bool link_error = false)
   Simulator::Schedule (Seconds (first_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
 
   if (link_error) {   // If packetdrop on rerouting is enabled
-    linkDrops(4, first_reroute_time, true);
+    linkDrops(6, first_reroute_time, true);
   }
 
   // Rorouting again
   Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetUp, n3ipv4, n3_to_n5_connection);
-  Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n5_connection);
+  Simulator::Schedule (Seconds (second_reroute_time), &Ipv4::SetDown, n3ipv4, n3_to_n4_connection);
 
   if (link_error) {   // If packetdrop on rerouting is enabled
-    linkDrops(3, second_reroute_time, true);
-    linkDrops(4, second_reroute_time, false);
+    linkDrops(5, second_reroute_time, true);
+    linkDrops(6, second_reroute_time, false);
   }
 
 
