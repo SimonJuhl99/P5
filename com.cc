@@ -7,17 +7,9 @@ static char const *scenario = "Rerouting";
 #include "network_templates/functions.cc"
 
 
-void printIt(std::map<string,bool> m) {
-    cout << "Configuration is: " << std::endl; 
-    cout << "    simulation time: " << end_time << " seconds" << std::endl;
-    for(std::map<string,bool>::iterator it=m.begin();it!=m.end();++it)
-        cout << "    " << it->first<<": "<<it->second<< std::endl;
-    cout << "\n";
-}
-
 
 int
-run (string tcp_version, std::map<string,bool> config = default_config)
+run (string tcp_version, conf config = default_config)
 {
   /* --------------------------------------------------------
   //  --    General Setup   --
@@ -29,20 +21,41 @@ run (string tcp_version, std::map<string,bool> config = default_config)
 
   config.insert(default_config.begin(), default_config.end());    // config takes presidence here.
 
+  current_config = config;
+  current_tcp_version = tcp_version;
+
 
   if (config["moving"] == true) {
     if (config["rerouting"] == true) {
-      end_time = start_time + 1174;
-      // end_time = start_time + 1162;
-      // end_time = start_time + 1242;
-      simulationEndTime = Time(Seconds (end_time));     // Set simulation time
-      defaultDatarate = DataRate("5Mbps");
-      delay = 0.005;
+      int leftoverPass = fullPass - shift_second;
+
+      if (argChange > 0) {
+        first_dynamic_reroute = argChange;
+      }
+      if (argChange2 > 0) {
+        cout << "Only use this outside \"moving\" scenario" << std::endl;
+      }
+
+      end_time = start_time + leftoverPass + (first_dynamic_reroute + shift_first);
+
+      // simulationEndTime = Time(Seconds (end_time));     // Set simulation time
+      float newDatarate = scaledDatarate * 10;
+      defaultDatarate = DataRate( std::to_string(newDatarate) + "Mbps");
+      // defaultDatarate = DataRate("5Mbps");
+      
+      if (argDelay <= 0) {
+        delay = (delayMs * 0.001) / 5;
+      }
     }
     else {
-      end_time = start_time + 772;
-      simulationEndTime = Time(Seconds (end_time));     // Set simulation time
+      end_time = start_time + fullPass;
     }
+      simulationEndTime = Time(Seconds (end_time));     // Set simulation time
+  }
+
+  if (argEndTime > 0) {
+    end_time = argEndTime;
+    simulationEndTime = Time(Seconds (argEndTime));     // Set simulation time
   }
 
 
@@ -56,7 +69,7 @@ run (string tcp_version, std::map<string,bool> config = default_config)
   }
 
   AnimationInterface anim = build_network(tcp_version, error_str);   // Network Setup
-  auto [source, sinkAddress] = setupDefaultNodeTraffic(tcp_version, error_str, config);   // Creating Default Sink & Source
+  auto [source, sinkAddress] = setupDefaultNodeTraffic(tcp_version, error_str);   // Creating Default Sink & Source
 
 
 
@@ -86,10 +99,13 @@ run (string tcp_version, std::map<string,bool> config = default_config)
 
     if (config["rerouting"] == true) {
 
-      int shift_first = 30;
-      int shift_second = 340;
+      // int shift_first = 30;
+      // int shift_second = 340;
       // int shift_second = 420;
       // int shift_second = 500;
+      // if (argShift > 0) {
+      //   shift_second = argShift;
+      // }
 
       ScheduleDataRateAndDelay(4, shift_first);
       ScheduleDataRateAndDelay(6, shift_first);
@@ -115,12 +131,10 @@ run (string tcp_version, std::map<string,bool> config = default_config)
   //  ------------
 
   if ( config["rerouting"] == true) {   // If moving satellites is enabled
-    float first_reroute_time = start_time + 100.07;
-    float second_reroute_time = start_time + 150.07;
 
-    if (config["moving"] == true) {
-      first_reroute_time = start_time + 712.007;
-      second_reroute_time = start_time + 1500.007; // After the simulation... set here because we only need one
+    if (config["moving"] == true && argChange <= 0 && argChange2 <= 0) {
+      first_reroute_time = first_dynamic_reroute;
+      second_reroute_time = second_dynamic_reroute; // After the simulation... set here because we only need one
     }
 
 
@@ -173,11 +187,18 @@ run (string tcp_version, std::map<string,bool> config = default_config)
   //  ------------
 
   if ( config["congestion"] == true) {   // If moving satellites is enabled
-    int new_sink_node = 1;   // Link, not node... see network template scematic
-    int new_sink_link = 1;   // Link, not node... see network template scematic
-    int new_source = 5;   // Link, not node... see network template scematic
+    // int new_sink_node = 1;   // Link, not node... see network template scematic
+    // int new_sink_link = 1;   // Link, not node... see network template scematic
+    // int new_source = 5;   // Link, not node... see network template scematic
 
-    Address sink2 = createSink(new_sink_node, new_sink_link, tcp_version, 0);
+
+    int new_sink_node = 5;   // Link, not node... see network template scematic
+    int new_sink_link = 4;   // Link, not node... see network template scematic
+    int new_source = 1;   // Link, not node... see network template scematic
+
+
+    Address sink2 = createSink(new_sink_node, new_sink_link, tcp_version, 1);
+    // Address sink2 = createSink(new_sink_node, new_sink_link, tcp_version, 0);
     BulkSendHelper source2 = createSource(new_source, tcp_version, sink2, error_str);
 
     sourceApp.Start ( Seconds ( source_start_time ) );
@@ -210,7 +231,8 @@ run (string tcp_version, std::map<string,bool> config = default_config)
   /////////////////////////////////////////////////
   //  --  Prepare variables for another run  --
   resetContainers();
-  resetTracingVars();
+  resetTracingVars(tcp_version, error_str);
+  current_config = default_config;
 
   return 1;
 }
@@ -227,29 +249,83 @@ main (int argc, char *argv[])
 
   ///////////////////////////
   // --  Argument Area
-  bool verbose = true;
-  uint32_t nCsma = 3;
-  uint32_t nWifi = 3;
-  bool tracing = false;
+
 
   CommandLine cmd (__FILE__);
-  cmd.AddValue ("nCsma", "Number of \"extra\" CSMA nodes/devices", nCsma);
-  cmd.AddValue ("nWifi", "Number of wifi STA devices", nWifi);
-  cmd.AddValue ("verbose", "Tell echo applications to log if true", verbose);
-  cmd.AddValue ("tracing", "Enable pcap tracing", tracing);
+
+  // Setup changes
+  cmd.AddValue ("data", "Default Data Rate for Links, Multiplied by 10 if Dynamic Links and Rerouting is Used", argDataRate);
+  cmd.AddValue ("scale", "Change the Downscaling Factor of Data Rate", argScale);
+  cmd.AddValue ("delay", "Default Delay for Links", argDelay);
+  cmd.AddValue ("end", "Change Simulation Runtime", argEndTime);
+  cmd.AddValue ("shift", "Change Shift of Second Satellite for Dynamic Links & Rerouting Usage", argShift);
+  cmd.AddValue ("change", "Change Timing for Rerouting in the Network", argChange);
+  cmd.AddValue ("change2", "Change Timing for Second Rerouting in the Network", argChange2);
+  // Scenarios
+  cmd.AddValue ("move", "Enable/Disable Moving Satellites Scenario", argMove);
+  cmd.AddValue ("con", "Enable/Disable Congestion Scenario", argCon);
+  cmd.AddValue ("reroute", "Enable/Disable Rerouting Scenario", argReroute);
+  cmd.AddValue ("error", "Enable/Disable Packet Drops on Rerouting Scenario", argError);
+  cmd.AddValue ("all", "Enable Complete Combined Scenarios", argAll);
+  // cmd.AddValue ("runAll", "Run All Scenarios in One Go", argRunAll);
 
   cmd.Parse (argc,argv);
+
+
+  if (argc > 1) {
+
+    if (argDataRate > 0) {  // If Data Rate Argument is Used
+      scaledDatarate = argDataRate;
+      defaultDatarate = DataRate( std::to_string(argDataRate) + "Mbps");
+    }
+
+    if (argScale > 0) {  // If Data Rate Scale Argument is Used
+      datarateScale = argScale;
+      scaledDatarate = (float)realDataRate / datarateScale;
+      defaultDatarate = DataRate( std::to_string(scaledDatarate) + "Mbps");
+    }
+
+    if (argDelay > 0) {  // If Delay Argument is Used
+      delayMs = argDelay;     // Milliseconds
+      delay = delayMs * 0.001;    // Converted to seconds
+    }
+ 
+    if (argEndTime > 0) {  // If Simulation Endtime Argument is Used
+      end_time = argEndTime;
+    }
+
+    if (argShift > 0) {  // If Satellite Shift Argument is Used
+      shift_second = argShift;
+    }
+
+    if (argChange > 0) {  // If Satellite Shift Argument is Used
+      first_reroute_time = argChange;
+    }
+
+    if (argChange2 > 0) {  // If Satellite Shift Argument is Used
+      second_reroute_time = argChange2;
+    }
+
+  }
 
 
   //  ----------------------------------
   //  Actual Script Running Section
 
-  std::map<string,bool> conf { 
-                          // {"link_error", true},
-                          {"rerouting", true},
-                          // {"congestion", true}, 
-                          // {"moving", true}
-                        };
+  conf conf { 
+              {"link_error", argError},
+              {"rerouting", argReroute},
+              {"congestion", argCon}, 
+              {"moving", argMove}
+            };
+  // if (argAll == true) { // Not ready, as they don't have separate filenames yet
+  //   conf { 
+  //           {"link_error", true},
+  //           {"rerouting", true},
+  //           {"congestion", true}, 
+  //           {"moving", true}
+  //         };
+  // }
 
 
   run("Bbr", conf);
@@ -259,6 +335,7 @@ main (int argc, char *argv[])
   if (conf["link_error"] == true ) {  // Turn if off, and run without
 
     conf["link_error"] = false;
+
     run("Bbr", conf);
     run("NewReno", conf);
     run("Vegas", conf);

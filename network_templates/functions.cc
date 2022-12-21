@@ -54,7 +54,7 @@ ScheduleDataRateAndDelay(int link_id, int shift = 0, bool oppo = true)
 
   // NS_LOG_INFO("Inde i Delay-dims");
   uint32_t speed_of_light = 299792458;
-  int oppo_len = 772;
+  int oppo_len = fullPass;
   int parallel_len = 2901;
   int arr_len;
 
@@ -133,8 +133,8 @@ ScheduleDataRateAndDelay(int link_id, int shift = 0, bool oppo = true)
     // double prop_delay = (double)std::stoi(oppo_dist_arr[i]) / (double)speed_of_light;
     double megabits_per_sec = (double)int_converted_dr_vals / (double)1000000;
     // double scaled_datarate = megabits_per_sec / 1000.0;
-    // cout << "Scale is: " << (double)scale << std::endl; 
-    double scaled_datarate = megabits_per_sec / (double)scale;
+    // cout << "Scale is: " << (double)datarateScale << std::endl; 
+    double scaled_datarate = megabits_per_sec / (double)datarateScale;
     Simulator::Schedule (Seconds (i), &ChangeDataRate, link_devices[link_id][0], link_devices[link_id][1], link_channel[link_id], scaled_datarate);
     Simulator::Schedule (Seconds (i), &ChangePropDelay, link_channel[link_id], prop_delay);
   }
@@ -243,18 +243,14 @@ int setupConThroughputTracing(string tcp_version, string error)
 
 
 
-auto setupDefaultNodeTraffic(string tcp_version, string error, std::map<string,bool> config = default_config )
-// int setupDefaultNodeTraffic(string tcp_version)
+auto setupDefaultNodeTraffic(string tcp_version, string error)
 {
   emptyTraceFiles(tcp_version, error);
+
   Address sinkAddress = createSink(7, 7, tcp_version);
-
-  // Address sinkAddress = createSink(5, 4, tcp_version);
-
-
   BulkSendHelper source = createSource(0, tcp_version, sinkAddress, error);
 
-  if ( config["congestion"] == true ) {
+  if ( current_config["congestion"] == true ) {
     setupConThroughputTracing(tcp_version, error);
   }
   else {
@@ -266,23 +262,13 @@ auto setupDefaultNodeTraffic(string tcp_version, string error, std::map<string,b
     Address add;
   };
 
-  // return 1;
   return retVals {source, sinkAddress};
-  // return {source, sinkAddress};
 }
 
 int linkDrops(int linkId, float time, bool state)
 {
-  // NS_LOG_INFO("Inside linkDrop, functions - line 255");
-
-  //   linkDrops(3, second_reroute_time, true);
-
   Simulator::Schedule (Seconds (time), &ActivateError, link_container[linkId].Get (1), state);
   Simulator::Schedule (Seconds (time), &ActivateError, link_container[linkId].Get (0), state);
-  // Simulator::Schedule (Seconds (time), &ActivateError, link_container[nodeId+2].Get (0), state);
-
-
-  // link_container[]  skal være  Ptr<NetDevice>
 
   return 1;
 }

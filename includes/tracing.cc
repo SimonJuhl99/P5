@@ -186,6 +186,7 @@ TraceConRxThroughput (std::string tp_tr_file_name, Ptr<FlowMonitor> monitor)
 
   for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
     {
+      // cout << "Datarate: " << i->second.rxBytes << std::endl;
       if (i->first == 1) {
         thr1 << curTime << " " << 8 * (i->second.rxBytes - prevRx1) / (1000 * 1000 * (curTime.GetSeconds () - prevRx1Time.GetSeconds ())) << std::endl;
         prevRx1Time = curTime;
@@ -215,30 +216,69 @@ int emptyTraceFiles(string tcp_version, string error, int extra_node = -1)
   std::ofstream cwnd (tcp_version + "-cwnd" + error + ".data", std::ios::out);
   std::ofstream in (tcp_version + "-rx-throughput" + error + ".data", std::ios::out);
   std::ofstream out (tcp_version + "-tx-throughput" + error + ".data", std::ios::out);
+  std::ofstream drop (tcp_version + "-dropped" + error + ".data", std::ios::out);
   rtt <<  "";
   cwnd <<  "";
   in <<  "";
   out <<  "";
+  drop <<  "";
 
   return 1;
 }
 
-int resetTracingVars()
+int resetTracingVars(string tcp_version, string error)
 {
   //  NS-3 doesn't reset these variables, so set to the final state
-  prevTx = 0;    // Earlier values for throughput tracing
-  prevRx = 0;    // Earlier values for throughput tracing
+  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
+  auto itr = stats.begin ();
+
+  // prevTx = 0;    // Earlier values for throughput tracing
+  // prevRx = 0;    // Earlier values for throughput tracing
+  // prevTx1 = 0;
+  // prevTx2 = 0;
+  // prevRx1 = 0;
+  // prevRx2 = 0;
+
+
+  prevRx = itr->second.rxBytes;    // Earlier values for throughput tracing
+  prevTx = itr->second.txBytes;    // Earlier values for throughput tracing
+
+
+  std::ofstream drop (tcp_version + "-dropped" + error + ".data", std::ios::out | std::ios::app);
+
+
+  // thr <<  curTime << " " << 8 * (current) / (1000 * 1000 * (curTime.GetSeconds () - prevTxTime.GetSeconds ())) << std::endl;
+  drop << "Tx:"<< 8 * prevTx << " Rx:" << 8 * prevRx << " Dropped:" << 8 * (prevTx - prevRx) << std::endl;
+
+  for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i) 
+  {
+    if (i->first == 1) {
+      prevRx1 = i->second.rxBytes;
+    } else if (i->first == 2) {
+      prevRx2 = i->second.rxBytes;
+    }
+  }
+
+
+
+
+  // itr++;
+  // prevRx1 = itr->second.rxBytes;
+  // prevTx1 = itr->second.txBytes;
+  // itr++;
+  // prevRx2 = itr->second.rxBytes;
+  // prevTx2 = itr->second.txBytes;
+
+
+
+
   prevTxTime = Now ();    // Earlier timestamps for throughput tracing
   prevRxTime = Now ();    // Earlier timestamps for throughput tracing
-
-  prevTx1 = 0;
-  prevTx2 = 0;
-  prevRx1 = 0;
-  prevRx2 = 0;
   prevTx1Time = Now ();
   prevTx2Time = Now ();
   prevRx1Time = Now ();
   prevRx2Time = Now ();
+
 
   return 1;
 }

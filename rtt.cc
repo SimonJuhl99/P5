@@ -67,7 +67,7 @@ run (string tcp_version, bool link_error = false)
   */
 
 
-  // end_time = start_time + 772;
+  // end_time = start_time + fullPass;
   // simulationEndTime = Seconds (end_time);     // Set simulation time
   // sinkApp.Stop ( simulationEndTime );
   // sourceApp.Stop ( simulationEndTime );

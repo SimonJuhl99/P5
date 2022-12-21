@@ -99,18 +99,6 @@ auto PointToPointHelper::InstallWithoutContainer(Ptr<Node> a, Ptr<Node> b)
   Ptr<PointToPointNetDevice> devA = m_deviceFactory.Create<PointToPointNetDevice> ();
   devA->SetAddress (Mac48Address::Allocate ());
 
-
-
-  /////////////////////////////
-  // New version....
-
-  // Ptr<Node> a = node.Get(node_a);
-  // Ptr<Node> b = node.Get(node_b);
-
-  // New version....
-  /////////////////////////////
-
-
   a->AddDevice (devA);
   Ptr<Queue<Packet> > queueA = m_queueFactory.Create<Queue<Packet> > ();
   devA->SetQueue (queueA);
@@ -140,26 +128,6 @@ auto PointToPointHelper::InstallWithoutContainer(Ptr<Node> a, Ptr<Node> b)
     Ptr<PointToPointNetDevice> i1, i2;
     Ptr<PointToPointChannel> i3;
   };
-
-
-  /////////////////////////////
-  // New version....
-
-  // NS_LOG_INFO("Current Link Channel is " + std::to_string(current_link));
-  // NS_LOG_INFO("Current Link Nodes are " + std::to_string(current_node_a) + " and " + std::to_string(current_node_b));
-
-  // link_devices[current_link][current_node_a] = devA;
-  // link_devices[current_link][current_node_b] = devB;
-  // link_channel[current_link] = channel;
-
-  // return 1;
-
-  // New version....
-  /////////////////////////////
-
-
-  /////////////////////////////
-  // Old version....
 
   return retVals {devA, devB, channel};
 }
@@ -194,7 +162,7 @@ build_network (string tcp_version, string error)
 
   // Source Setup
   // Config::SetDefault ("ns3::BulkSendApplication::SendSize", UintegerValue (100000));    // Change the packetsize of a source application
-  //Config::SetDefault ("ns3::BulkSendApplication::DataRate", StringValue ("448kb/s"));    // Change the datarate of source applications
+  // Config::SetDefault ("ns3::BulkSendApplication::DataRate", StringValue ("448kb/s"));    // Change the datarate of source applications
 
 
   // General Setup
